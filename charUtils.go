@@ -35,19 +35,12 @@ func cmpChrCommunist( a, b rune ) bool {
 }
 
 func findRuneCommunist( str string, chr rune ) bool {
+  chr = toLower( chr )
   for _, c := range str {
-    if cmpChrCommunist( c, chr ) == false { return false }
+    if toLower( c ) == chr { return true }
   }
 
   return true;
-}
-
-func findRuneCommunisto( str string, chr rune ) bool {
-  for _, c := range str {
-    if toLower( c ) == toLower( chr ) { return true }
-  }
-
-  return false;
 }
 
 func strnEqlCommunist( s, t string, n int ) bool {

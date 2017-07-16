@@ -16,7 +16,7 @@ package regexp4
 import "testing"
 import "fmt"
 
-func printASM( rexp RE ){
+func printASM( rexp *RE ){
   fmt.Printf( "                     init %q\n", rexp.re )
 
   for i, v := range rexp.asm {
@@ -46,8 +46,8 @@ func printASM( rexp RE ){
 }
 
 func showCompile(t *testing.T) {
-  var re RE
-  re.Compile( "[:A:S]a" )
+  re := new( RE )
+  re.Compile( "<[:a]a>" )
   printASM( re )
   re.Compile( "#*cas[A-Z]" )
   printASM( re )
@@ -995,8 +995,8 @@ func nTest( t *testing.T ){
   done := make(chan struct{})
   for _, c := range numTest {
     go func( txt, re string, n int ){
-      var r RE
-      x := r.Match( txt, re )
+      r := Compile( re )
+      x := r.MatchString( txt )
 
       if x != n  {
         t.Errorf( "Regexp4( \"%s\", \"%s\" ) == %d, expected %d", txt, re, x, n )
@@ -1154,7 +1154,8 @@ func cTest( t *testing.T ){
   for _, c := range catchTest {
     go func( txt, re string, nCatch int, eCatch string ){
       var r RE
-      r.Match( txt, re )
+      r.Compile( re )
+      r.FindString( txt )
       catch := r.GetCatch( nCatch )
       if catch != eCatch  {
         t.Errorf( "Regexp4( \"%s\", \"%s\" )\nGetCatch( %d ) == %s, expected %s",
@@ -1504,7 +1505,7 @@ func pTest( t *testing.T ){
 
   var re RE
   for _, c := range putTest {
-    re.Match( c.txt, c.re )
+    re.Find( c.txt, c.re )
     put := re.PutCatch( c.put )
     if put != c.expected {
       t.Errorf( "Regexp4( \"%s\", \"%s\" )\nPutCatch( %s ) == %s, expected %s",
@@ -1728,7 +1729,8 @@ func nTestUTF( t *testing.T ){
   for _, c := range numTest {
     go func( txt, re string, n int ){
       var r RE
-      x := r.Match( txt, re )
+      r.Compile( re )
+      x := r.MatchString( txt )
 
       if x != n  {
         t.Errorf( "Regexp4( \"%s\", \"%s\" ) == %d, expected %d", txt, re, x, n )
@@ -1825,7 +1827,7 @@ func cTestUTF( t *testing.T ){
   done := make(chan struct{})
   for _, c := range catchTest {
     go func( txt, re string, nCatch int, eCatch string ){
-      var r RE
+      r := new( RE )
       r.Match( txt, re )
       catch := r.GetCatch( nCatch )
       if catch != eCatch  {
@@ -2024,7 +2026,7 @@ func gTestUTF( t *testing.T ){
 
   var re RE
   for _, c := range putTest {
-    re.Match( c.txt, c.re )
+    re.Find( c.txt, c.re )
     pos := re.GpsCatch( c.catch )
     len := re.LenCatch( c.catch )
     if pos != c.pos || len != c.len {

@@ -13,6 +13,12 @@ const (
   modCapitalism uint8 = ^modCommunism
 )
 
+const (
+  asmPathIni = iota; asmPathEle; asmPathEnd;
+  asmGroupIni; asmGroupEnd; asmHookIni; asmHookEnd; asmSetIni; asmSetEnd;
+  asmBackref; asmMeta; asmRangeab; asmUTF8; asmPoint; asmSimple; asmEnd
+)
+
 const ( rePath uint8 = iota; reGroup; reHook; reSet; reBackref; reMeta; reRangeab; reUTF8; rePoint; reSimple )
 
 type reStruct struct {
@@ -32,14 +38,9 @@ type raptorASM struct {
   re    reStruct
 }
 
-const (
-  asmPathIni = iota; asmPathEle; asmPathEnd;
-  asmGroupIni; asmGroupEnd; asmHookIni; asmHookEnd; asmSetIni; asmSetEnd;
-  asmBackref; asmMeta; asmRangeab; asmUTF8; asmPoint; asmSimple; asmEnd
-)
-
 type RE struct {
   txt, re      string
+  compile      bool
   result       int
 
   txtInit      int
@@ -55,6 +56,10 @@ type RE struct {
 }
 
 func (r *RE) Compile( re string ){
+  r.catchIndex = 1
+  r.compile    = false
+  if len(re) == 0 { return }
+
   rexp := reStruct{ str: re, reType: rePath }
   r.re  = re
   r.asm = make( []raptorASM, 0, 32 )
@@ -66,6 +71,7 @@ func (r *RE) Compile( re string ){
   } else { r.genTracks( &rexp ) }
 
   r.asm = append( r.asm, raptorASM{ inst: asmEnd, close: len(r.asm) } )
+  r.compile = true
 }
 
 func isPath( rexp *reStruct ) bool {
@@ -339,21 +345,26 @@ func getLoops( rexp, track *reStruct ){
 
 //-! match
 
-func (r *RE) MatchBool( txt, re string ) bool {
-  if r.Match( txt, re ) > 0 { return true }
-
-  return false
+func (r *RE) Find( txt, re string ) bool {
+  return r.Match( txt, re ) > 0
 }
 
 func (r *RE) Match( txt, re string ) int {
+  r.Compile( re )
+  return r.MatchString( txt )
+}
+
+func (r *RE) FindString( txt string ) bool {
+  return r.MatchString( txt ) > 0
+}
+
+func (r *RE) MatchString( txt string ) int {
   loops       := len(txt)
   r.txt        = txt
   r.result     = 0
   r.catches    = make( []catchInfo, 32 )
   r.catchIndex = 1
-  if len(txt) == 0 || len(re) == 0 { return 0 }
-
-  r.Compile( re )
+  if len(txt) == 0  || !r.compile { return 0 }
 
   if (r.mods & modAlpha) > 0 { loops = 1 }
 
@@ -364,11 +375,11 @@ func (r *RE) Match( txt, re string ) int {
 
     if r.trekking( 0 ) {
       if (r.mods & modOmega) > 0 {
-        if r.txtPos == r.txtLen                                 { r.result = 1; return 1
+        if r.txtPos == r.txtLen                              { r.result = 1; return 1
         } else { r.catchIndex = 1 }
       } else if (r.mods & modLonley   ) > 0                  { r.result = 1; return 1
       } else if (r.mods & modFwrByChar) > 0 || r.txtPos == 0 { r.result++
-      } else {   forward = r.txtPos;                              r.result++; }
+      } else {   forward = r.txtPos;                           r.result++; }
     } else { r.catchIndex = ocindex }
   }
 
@@ -376,20 +387,22 @@ func (r *RE) Match( txt, re string ) int {
 }
 
 func (r *RE) trekking( index int ) (result bool) {
-  switch r.asm[ index ].inst {
-  case asmEnd, asmPathEnd, asmPathEle, asmGroupEnd, asmHookEnd, asmSetEnd: return true
-  case asmHookIni :
-    iCatch := r.openCatch();
-    result  = r.loopGroup( index )
-    if result { r.closeCatch( iCatch ) }
-  case asmGroupIni: result = r.loopGroup( index )
-  case asmPathIni : result = r.walker   ( index )
-  default         : result = r.looper   ( index )
+  for ; r.asm[ index ].inst != asmEnd; index = r.asm[ index ].close + 1 {
+    switch r.asm[ index ].inst {
+    case asmPathEnd, asmPathEle, asmGroupEnd, asmHookEnd, asmSetEnd: return true
+    case asmHookIni :
+      iCatch := r.openCatch();
+      result  = r.loopGroup( index )
+      if result { r.closeCatch( iCatch ) }
+    case asmGroupIni: result = r.loopGroup( index )
+    case asmPathIni : result = r.walker   ( index )
+    default         : result = r.looper   ( index )
+    }
+
+    if !result { return false }
   }
 
-  if result && r.trekking( r.asm[ index ].close + 1 ) { return true }
-
-  return false
+  return true
 }
 
 func (r *RE) walker( index int ) bool {
@@ -402,7 +415,6 @@ func (r *RE) walker( index int ) bool {
 
   return false
 }
-
 
 func (r *RE) looper( index int ) bool {
   loops := 0
@@ -443,7 +455,6 @@ func (r *RE) loopGroup( index int ) bool {
   if loops < r.asm[ index ].re.loopsMin { return false  }
   return true
 }
-
 
 func (r *RE) match( index int, txt string, forward *int ) bool {
   switch r.asm[ index ].re.reType {
@@ -513,7 +524,7 @@ func (r *RE) matchSet( index int, txt string, forward *int ) (result bool) {
       result = r.match( index, txt, forward )
     default:
       if (r.asm[ index ].re.mods & modCommunism)  > 0 {
-        result = findRuneCommunisto( r.asm[ index ].re.str, rune( txt[ 0 ] ) )
+        result = findRuneCommunist( r.asm[ index ].re.str, rune( txt[ 0 ] ) )
       } else {
         result = strnchr( r.asm[ index ].re.str, rune( txt[ 0 ] ) )
       }
@@ -623,4 +634,20 @@ func (r *RE) PutCatch( pStr string ) (result string) {
   }
 
   return
+}
+
+func (r *RE) Copy() *RE {
+  nre := RE{ txt: r.txt, re: r.re, compile: r.compile, result: r.result, catchIndex: r.catchIndex, mods: r.mods }
+  nre.catches = make( []catchInfo, r.catchIndex )
+  copy( nre.catches, r.catches )
+  nre.asm     = make( []raptorASM, len( r.asm ) )
+  copy( nre.asm, r.asm )
+
+  return &nre
+}
+
+func Compile( re string ) *RE {
+  nre := new( RE )
+  nre.Compile( re )
+  return nre
 }

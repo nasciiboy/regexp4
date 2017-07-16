@@ -3,7 +3,7 @@
 #+LANGUAGE: en
 #+STARTUP:  showall
 
-regexp3 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor][C-lang]], [[https://github.com/nasciiboy/regexp3][Go-lang]]) and regexp4 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor-4][C-lang]], [[https://github.com/nasciiboy/regexp4][Go-lang]]):
+regexp3 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor][C-lang]], [[https://github.com/nasciiboy/regexp3][Go-lang]]) and regexp4 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor-4][C-lang]], [[https://github.com/nasciiboy/regexp4][Go-lang]])
 
 lang: [[file:readme_es.org][es]]
 
@@ -105,14 +105,38 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
     var re regexp4.RE
   #+END_SRC
 
+  o
+
+  #+BEGIN_SRC go
+    re := new( regexp4.RE )
+  #+END_SRC
+
+  o
+
+  #+BEGIN_SRC go
+    re := regexp4.Compile( "regexp" )
+  #+END_SRC
+
   The available methods are
 
   #+BEGIN_SRC go
+    // copy regexp, including string and captures
+    re.Copy() *RE
+
+    // compile regexp
+    re.Compile( re string ) *RE
+
     // search, return number of matches
+    re.MatchString( txt string ) int
+
+    // search, return boolean resulta
+    re.FindString ( txt string ) bool
+
+    // compilation and search, return number of matches
     re.Match( txt, re string ) int
 
-    // search, return boolean result
-    re.MatchBool( txt, re string ) bool
+    // compilation and search, return boolean result
+    re.Find ( txt, re string ) bool
 
     // return number of catches
     re.TotCatch() int
