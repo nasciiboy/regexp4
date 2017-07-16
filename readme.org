@@ -159,24 +159,6 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
     re.PutCatch( pText string ) string
   #+END_SRC
 
-** =Match()=
-
-   This the only search method, its prototype is:
-
-   #+BEGIN_SRC go
-     re.Match( txt, re string ) int
-   #+END_SRC
-
-   - txt :: string on which to perform the search
-
-   - re  :: string containing the regular expression search
-
-
-   The function returns the number of matches =0= (none) o =n=
-   matches.
-
-   regexp4 opted for a alternate syntax, detailed below
-
 ** Syntax
 
    - Text search in any location:
@@ -583,6 +565,7 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
    - =:W= :: any non-alphanumeric character.
    - =:s= :: any blank space character.
    - =:S= :: any character other than a blank.
+   - =:&= :: no ascii character (>= 128)
 
    - =:|= :: Vertical bar
    - =:^= :: Caret

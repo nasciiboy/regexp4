@@ -168,34 +168,6 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
   mencionar, que instancias distintas del objeto =RE= puede ser utilizadas
   dentro de codigo concurrente
 
-** Metodo =Match()=
-
-   Esta es el unico metodo de busqueda, aqui su prototipo:
-
-   #+BEGIN_SRC go
-     re.Match( txt, re string ) int
-   #+END_SRC
-
-   - txt  :: cadena sobre la que efectuar la busqueda.
-
-   - re   :: cadena que contiene la expresion regular de busqueda.
-
-
-   La funcion regresa el numero de coincidencias =0= (ninguna) o =n=
-   coincidencias.
-
-   La sintaxis estandar para expresiones regulares utiliza el caracter '=\=',
-   lamentablemente este signo entra en "conflicto" con la sintaxis de Go, por
-   esto e intentando mantener el codigo lo mas sencillo, se ha optado por una
-   sintaxis alterna detallada a continuacion
-
-   para facilitar la evaluacion de una busqueda se proporciona un envoltorio
-   para el metodo =Match= con nombre =Find=. Los parametros son identicos,
-   la unica diferencia esta en que devuelve un valor booleano
-
-   Tambien se ofrece la posibilidad de "compilar" previamente la expresion, si
-   es el caso, solo debe utilizar los metodos =MatchString= o =FindString=
-
 ** Sintaxis
 
    - busqueda de texto en cualquier ubicacion:
