@@ -190,8 +190,11 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
    sintaxis alterna detallada a continuacion
 
    para facilitar la evaluacion de una busqueda se proporciona un envoltorio
-   para el metodo =Match= con nombre =MatchBool=. Los parametros son identicos,
+   para el metodo =Match= con nombre =Find=. Los parametros son identicos,
    la unica diferencia esta en que devuelve un valor booleano
+
+   Tambien se ofrece la posibilidad de "compilar" previamente la expresion, si
+   es el caso, solo debe utilizar los metodos =MatchString= o =FindString=
 
 ** Sintaxis
 
