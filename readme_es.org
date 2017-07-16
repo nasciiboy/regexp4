@@ -1,0 +1,771 @@
+#+TITLE:    Recursive Regexp Raptor (regexp4)
+#+AUTHOR:   nasciiboy
+#+LANGUAGE: es
+#+STARTUP:  showall
+
+regexp3 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor][C-lang]], [[https://github.com/nasciiboy/regexp3][Go-lang]]) y regexp4 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor-4][C-lang]], [[https://github.com/nasciiboy/regexp4][Go-lang]]):
+
+lang: [[file:readme.org][en]]
+
+raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
+
+* Caracteristicas
+
+  - Manejo sencillo,
+
+  - Sin verificacion de errores.
+
+  - Solo expresiones regulares
+
+  - Cero dependencias. Ni la libreria estandar de GO esta precente *GO PURO*.
+
+  - Conteo de coincidencias
+
+  - Capturas
+
+  - Reemplazo de capturas
+
+  - Colocacion de capturas especificas dentro de un arreglo
+
+  - Referencia dentro de la exprecion a capturas previas
+
+  - Negacion de expreciones (experimental)
+
+  - Objeto concurrentemente seguro
+
+  - soporte sencillo para caracteres unicode (UTF-8)
+
+* Introduccion
+
+  *Recurseve Regexp Raptor* es una libreria de busqueda, captura y reemplazo de
+  expresiones regulares escrita en lenguaje C desce cero. El presente es un port
+  al lenguage de programacion *Go* intentando lograr lo siguiente
+
+  - Contar con la mayoria de caracteristicas presentes en cualquier otra
+    libreria regexp.
+
+  - Codigo elegante: sencillo, claro y dotado de gracia.
+
+  - Evitar el uso de ninguna libreria externa, incluida la libreria estandar.
+
+  - Ser util como material de aprendizaje.
+
+** Motivacion
+
+   El desarrollo original en C, fue fruto de la no existencia de una libreria
+   estandar de expresiones regulares para dicho lenguaje, si bien existen varias
+   implementaciones, como pcre, la libreria regexp.h del proyecto GNU, regexp
+   del sistema operativo Plan 9, y algunas otras mas, el autor de este trabajo
+   (que igual y es un poco retard) encontro en todas, codigo rebuscado y mistico
+   repartido en varios ficheros, llenos de macros, guiones bajos y variables
+   cripticas. Incapas de entender nada y tras un retiro a la isla de la
+   meditacion onanista el autor se propuso hacer su propia libreria con casinos
+   y colegialas japonesas.
+
+   El port al lenguaje de programacion Go surguio de la simple
+   necesidad/curiosidad de aprender un poco mas. De momento es una burda
+   aproximacion con mas de *C* que de *Go*, con chapuzas varias... pero bueno,
+   el repositorio debia tener un inicio, no?
+
+** Desarrollo y pruebas
+
+   Se ha utilizado GNU Emacs (el unico y verdadero sistema operativo), go
+   (1.7.5), konsole y fish, corriendo en Freidora 25.
+
+   puedes optener una copia del codigo bien clonando el repositorio directamente
+
+   #+BEGIN_SRC sh
+     git clone https://github.com/nasciiboy/regexp4.git ~/go/src/github.com/nasciiboy/regexp4
+   #+END_SRC
+
+   o mediante =go get=
+
+   #+BEGIN_SRC sh
+     go get github.com/nasciiboy/regexp4
+   #+END_SRC
+
+   para efectuar las pruebas si estas dentro del repositorio
+
+   #+BEGIN_SRC sh
+     go test
+   #+END_SRC
+
+   o desde cualquier ruta
+
+   #+BEGIN_SRC sh
+     go test github.com/nasciiboy/regexp4
+   #+END_SRC
+
+* Uso
+
+  Para incluir Recursive Regexp Raptor en su codigo solo necesita colocar la
+  linea
+
+  #+BEGIN_SRC go
+    import "github.com/nasciiboy/regexp4"
+  #+END_SRC
+
+  para utilizar la libreria debe crear un objeto de tipo =RE=, asi:
+
+  #+BEGIN_SRC go
+    var re regexp4.RE
+  #+END_SRC
+
+  las metodos disponibles son
+
+  #+BEGIN_SRC go
+    // busqueda, retorna numero de coincidencias
+    re.Match( txt, re string ) int
+
+    // busqueda, retorna resultado booleano de la busqueda
+    re.MatchBool( txt, re string ) bool
+
+    // retorna numero de capturas
+    re.TotCatch() int
+
+    // retorna una captura por su indice
+    re.GetCatch( index int ) string
+
+    // retorna la posicion de inicio de la captura o 0 (?)
+    re.GpsCatch( index int ) int
+
+    // retorna la longitud de la captura o 0 (?)
+    re.LenCatch( index int ) int
+
+    // Reemplaza el contenido de una captura por rplStr, por su id
+    // regresa la cadena resultante
+    re.RplCatch( rplStr string, id int ) string
+
+    // Crea una cadena con las capturas y texto indicados en pText
+    // regresa la cadena resultante
+    re.PutCatch( pText string ) string
+  #+END_SRC
+
+  mencionar, que instancias distintas del objeto =RE= puede ser utilizadas
+  dentro de codigo concurrente
+
+** Metodo =Match()=
+
+   Esta es el unico metodo de busqueda, aqui su prototipo:
+
+   #+BEGIN_SRC go
+     re.Match( txt, re string ) int
+   #+END_SRC
+
+   - txt  :: cadena sobre la que efectuar la busqueda.
+
+   - re   :: cadena que contiene la expresion regular de busqueda.
+
+
+   La funcion regresa el numero de coincidencias =0= (ninguna) o =n=
+   coincidencias.
+
+   La sintaxis estandar para expresiones regulares utiliza el caracter '=\=',
+   lamentablemente este signo entra en "conflicto" con la sintaxis de Go, por
+   esto e intentando mantener el codigo lo mas sencillo, se ha optado por una
+   sintaxis alterna detallada a continuacion
+
+   para facilitar la evaluacion de una busqueda se proporciona un envoltorio
+   para el metodo =Match= con nombre =MatchBool=. Los parametros son identicos,
+   la unica diferencia esta en que devuelve un valor booleano
+
+** Sintaxis
+
+   - busqueda de texto en cualquier ubicacion:
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "Raptor" );
+     #+END_SRC
+
+   - multiples opciones de busqueda "exp1|exp2"
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "Dinosaur|T Rex|Raptor|Triceratops" );
+     #+END_SRC
+
+   - coincidencia con cualquier caracter '.'
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "R.ptor" );
+     #+END_SRC
+
+   - coincidencia cero o una ves '?'
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "Ra?ptor" );
+     #+END_SRC
+
+   - coincidencia una o mas veces '+'
+
+     #+BEGIN_SRC go
+       re.Match( "Raaaptor Test", "Ra+ptor" );
+     #+END_SRC
+
+   - coincidencia cero o mas veces '*'
+
+     #+BEGIN_SRC go
+       re.Match( "Raaaptor Test", "Ra*ptor" );
+     #+END_SRC
+
+   - rango de coincidencias "{n1,n2}"
+
+     #+BEGIN_SRC go
+       re.Match( "Raaaptor Test", "Ra{0,100}ptor" );
+     #+END_SRC
+
+   - numero de coincidencias especifico '{n1}'
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "Ra{1}ptor" );
+     #+END_SRC
+
+   - numero minimo de coincidencias '{n1,}'
+
+     #+BEGIN_SRC go
+       re.Match( "Raaaptor Test", "Ra{1,}ptor" );
+     #+END_SRC
+
+   - Conjuntos.
+
+     - Conjunto de caracteres "[abc]"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "R[uoiea]ptor" );
+       #+END_SRC
+
+     - Rango dentro de un conjunto de caracteres "[a-b]"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "R[a-z]ptor" );
+       #+END_SRC
+
+     - Metacaracter dentro de un conjunto de caracteres "[:meta]"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "R[:w]ptor" );
+       #+END_SRC
+
+     - inversion de conjunto de caracteres  "[^abc]"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "R[^uoie]ptor" );
+       #+END_SRC
+
+   - coincidencia con un caracter que sea una letra ":a"
+
+     #+BEGIN_SRC go
+       re.Match( "RAptor Test", "R:aptor" );
+     #+END_SRC
+
+   - coincidencia con un caracter que no sea una letra ":A"
+
+     #+BEGIN_SRC go
+       re.Match( "R△ptor Test", "R:Aptor" );
+     #+END_SRC
+
+   - coincidencia con un caracter que sea una numero ":d"
+
+     #+BEGIN_SRC go
+       re.Match( "R4ptor Test", "R:dptor" );
+     #+END_SRC
+
+   - coincidencia con un caracter que no sea un numero ":D"
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "R:Dptor" );
+     #+END_SRC
+
+   - coincidencia con un caracter alfanumerico ":w"
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "R:wptor" );
+     #+END_SRC
+
+   - coincidencia con un caracter no alfanumerico ":W"
+
+     #+BEGIN_SRC go
+       re.Match( "R△ptor Test", "R:Wptor" );
+     #+END_SRC
+
+   - coincidencia con un caracter que sea un espacio ":s"
+
+     #+BEGIN_SRC go
+       re.Match( "R ptor Test", "R:sptor" );
+     #+END_SRC
+
+   - coincidencia con un caracter que no sea un espacio ":S"
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "R:Sptor" );
+     #+END_SRC
+
+   - escape de caracteres con significado especial ":caracter"
+
+     los caracteres '|', '(', ')', '<', '>', '[', ']', '?', '+', '*', '{', '}',
+     '-', '#' y '@' indican como debe procesarse la exprecion regular, colocar
+     alguno de estos caracteres tal cual, sin tener en cuenta una correcta
+     sintaxis dentro de la exprecion, puede generar bucles infinitos al igual
+     que errores por acceso a elementos fuera del limite de un =slice=.
+
+     #+BEGIN_SRC go
+       re.Match( ":#()|<>", ":::#:(:):|:<:>" );
+     #+END_SRC
+
+     los caracteres /especiales/ (exepto el metacarater =:=) pierden su
+     significado detro de un conjunto
+
+     #+BEGIN_SRC go
+       re.Match( "()<>[]|{}*#@?+", "[()<>:[:]|{}*?+#@]" );
+     #+END_SRC
+
+   - agrupacion "(exp)"
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "(Raptor)" );
+     #+END_SRC
+
+   - agrupacion con captura "<exp>"
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "<Raptor>" );
+     #+END_SRC
+
+   - backreferences "@id"
+
+     las referencias necesitan que previamente se halla capturado una exprecion
+     mediante "<exp>", luego se coloca el numero de aparicion de la captura
+     precidido por '@'
+
+     #+BEGIN_SRC go
+       re.Match( "ae_ea", "<a><e>_@2@1" )
+     #+END_SRC
+
+   - modificadores de comportamiento
+
+     Existen dos tipos de modificadores. El primero afecta de forma global el
+     comportamiento de la exprecion, el segundo afecta secciones en
+     especifico. En ambos caso los la sintaxis es la misma, el signo '#',
+     seguido por los modificadores,
+
+     los modificadores de alcance global se coloca al inicio, de toda la
+     exprecion y son los siguientes
+
+     - busqueda solo al inicio '#^exp'
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "#^Raptor" );
+       #+END_SRC
+
+     - busqueda solo al final '#$exp'
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "#$Test" );
+       #+END_SRC
+
+     - busqueda al inicio y final "#^$exp"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "#^$Raptor Test" );
+       #+END_SRC
+
+     - detener con la primer coincidencia "#?exp"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "#?Raptor Test" );
+       #+END_SRC
+
+     - buscar por la cadena caracter a caracter "#~"
+
+       de forma predeterminada cuando una exprecion coincide con una region del
+       texto de busqueda, la busqueda prosigue a partir del final de dicha
+       coincidencia, para ignorar este comportamiento, haciendo que la busqueda
+       siempre sea caracter a caracter se utiliza este modificador
+
+       #+BEGIN_SRC go
+         re.Match( "aaaaa", "#~a*" );
+       #+END_SRC
+
+       en este ejemplo, sin el modificador el resultado seria una coincidencia,
+       sin embargo con este modificador la busqueda continua inmediatamente
+       despues del siguente caracter regresando cinco coincidencias.
+
+     - ignorar entre minusculas y mayusculas "#*exp"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "#*RaPtOr TeSt" );
+       #+END_SRC
+
+
+     todos los modificadores anteriores son compatibles entre si es decir podria
+     buscar
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "#^$*?~RaPtOr TeSt" );
+     #+END_SRC
+
+     sin embargo los  modificadores  '~' y '?' pierden sentido debido a la
+     presencia de '^' y/o '$'.
+
+     una exprecion del tipo:
+
+     #+BEGIN_SRC go
+       re.Match( "Raptor Test", "#$RaPtOr|#$TeSt" );
+     #+END_SRC
+
+     es erronea, el modificador despues del operador '|' se aplicaria a la
+     seccion entre '|' y '#', es decir a una cadena vacia, lo que proboca un
+     retorno incorrecto
+
+     los modificadores locales se colocan despues del indicador de repeticion
+     (de existir) y afectan la misma region que afectan los indicadores de
+     repeticion, es decir caracteres, conjuntos o agrupaciones.
+
+     - ignorar entre minusculas y mayusculas "exp#*"
+
+       #+BEGIN_SRC go
+         re.Match( "Raptor Test", "(RaPtOr)#* TeS#*t" );
+       #+END_SRC
+
+     - no ignorar entre minusculas y mayusculas "exp#/"
+
+       #+BEGIN_SRC go
+         re.Match( "RaPtOr TeSt", "#*(RaPtOr)#/ TES#/T" );
+       #+END_SRC
+
+     - *negacion de exprecion* "exp#!"
+
+       esta poco convencional exprecion permite el equivalente en otras
+       librerias a expreciones tipo
+
+       #+BEGIN_SRC go
+         xx.*yy
+       #+END_SRC
+
+       es decir "xx" seguida por cualquier cosa que no sea "yy", seguida por "yy".
+       En esta sintaxis seria
+
+       #+BEGIN_SRC go
+         re.Match( "xx123456789yy", "xx(yy)*#!yy" );
+       #+END_SRC
+
+** Capturas
+
+   Las capturas se indexan segun el orden de aparicion dentro de la expresion
+   por ejemplo:
+
+   #+BEGIN_EXAMPLE
+     <   <   >  | <   <   >   >   >
+     = 1 ==========================
+         = 2==    = 2 =========
+                      = 3 =
+   #+END_EXAMPLE
+
+   Si la exprecion coincide mas de una ocacion dentro del texto de busqueda el
+   indice, se incrementa segun su aparicion es decir:
+
+   #+BEGIN_EXAMPLE
+     <   <   >  | <   >   >   <   <   >  | <   >   >   <   <   >  | <   >   >
+     = 1 ==================   = 3 ==================   = 5 ==================
+         = 2==    = 2==           = 4==    = 4==           = 6==    = 6==
+     coincidencia uno         coincidencia dos         coincidencia tres
+   #+END_EXAMPLE
+
+   El metodo =GetCatch= hace una copia de una la captura dentro de =string=,
+   aqui su prototipo:
+
+   #+BEGIN_SRC go
+     re.GetCatch( index int ) string
+   #+END_SRC
+
+   - index :: indice de la agrupacion (de =1= a =n=).
+
+
+   la funcion regeresa una cadena con la copia del contenido de la captura. Un
+   indice incorrecto regresara un =string= vacio.
+
+   para optener el numero capturadas dentro de una busqueda, utilice =TotCatch=:
+
+   #+BEGIN_SRC go
+     re.TotCatch() int
+   #+END_SRC
+
+   que regresa un valor positivo de =0= a =n=.
+
+   Podria utilzar esta y la anterior funcion para imprimir las capturadas con
+   una funcion como esta:
+
+   #+BEGIN_SRC go
+     func printCatch( re regexp4.RE ){
+       for i := 1; i <= re.TotCatch(); i++ {
+         fmt.Printf( "[%d] >%s<\n", i, re.GetCatch( i ) )
+       }
+     }
+   #+END_SRC
+
+*** Colocar capturas dentro de una cadena
+
+    #+BEGIN_SRC go
+      re.PutCatch( pStr string ) string
+    #+END_SRC
+
+    el argumento =pStr= contiene el texto con el cual formar la nueva cadena
+    (=string=) asi como indicadores de cuales capturas colocar. Para indicar la
+    insercion de una captura coloque el signo '#' seguido del indice de
+    captura. por ejemplo el argumento =pStr= podria ser
+
+    #+BEGIN_SRC go
+      pStr := "captura 1 >>#1<< captura 2 >>#2<< captura 747 >>#747<<"
+    #+END_SRC
+
+    para colocar el caracter '#' dentro de la cadena escape '#' con un '#'
+    adicional, es decir:
+
+    #+BEGIN_EXAMPLE
+      "## comentario"  -> "# comentario"
+    #+END_EXAMPLE
+
+*** Reemplazar una captura
+
+    El reemplazo opera sobre un arreglo de caracteres en el cual se coloca el
+    texto de busqueda modificando una captura especifica por una cadena de
+    texto, el metodo encargado de esta labor es =RplCatch=, su prototipo es:
+
+    #+BEGIN_SRC go
+      re.RplCatch( rplStr string, id int ) string
+    #+END_SRC
+
+    - rplStr :: texto de reemplazo para captura.
+
+    - id     :: *identificador* de captura segun el orden de aparicion dentro de
+                la exprecion regular. Pasar un indice incorrecto, coloca una
+                copia sin modificacion de la cadena de busqueda sobre el arreglo
+                =newStr=.
+
+
+    en este caso el uso del argumento =id= a diferencia del metodo =GetCatch=
+    no se refiere a una "captura" en especifico, es decir no importa la cantidad
+    de ocaciones que se ha capturado una exprecion, el identificador indica la
+    *posicion* dentro de la exprecion en si, es decir:
+
+    #+BEGIN_EXAMPLE
+         <   <   >  | <   <   >   >   >
+      id = 1 ==========================
+      id     = 2==    = 2 =========
+      id                  = 3 =
+      posicion de la captura dentro de la exprecion
+    #+END_EXAMPLE
+
+    la modificacion afecta de este modo
+
+    #+BEGIN_EXAMPLE
+      <   <   >  | <   >   >       <   <   >  | <   >   >      <   <   >  | <   >   >
+      = 1 ==================       = 1 ==================      = 1 ==================
+          = 2==    = 2==               = 2==    = 2==              = 2==    = 2==
+      captura uno                  "..." dos                   "..." tres
+    #+END_EXAMPLE
+
+** Metacaracteres de busqueda
+
+   - =:d= :: dígito del 0 al 9.
+   - =:D= :: cualquier carácter que no sea un dígito del 0 al 9.
+   - =:a= :: cualquier caracter que sea una letra (a-z,A-Z)
+   - =:A= :: cualquier caracter que no sea una letra
+   - =:w= :: cualquier carácter alfanumérico.
+   - =:W= :: cualquier carácter no alfanumérico.
+   - =:s= :: cualquier caracter de espacio en blanco.
+   - =:S= :: cualquier carácter que no sea un espacio en blanco.
+
+   - =:|= :: barra vertical
+   - =:^= :: acento circunflejo
+   - =:$= :: signo dolar
+   - =:(= :: parentesis izquierdo
+   - =:)= :: parentesis derecho
+   - =:<= :: mayor que
+   - =:>= :: menor que
+   - =:[= :: corchete izquierdo
+   - =:]= :: corchete derecho
+   - =:.= :: punto
+   - =:?= :: interrogacion
+   - =:+= :: mas
+   - =:-= :: menos
+   - =:*= :: asterisco
+   - =:{= :: llave izquierda
+   - =:}= :: llave derecha
+   - =:#= :: modificador
+   - =::= :: dos puntos
+
+
+   adicionalmente utilice la sintaxis propia de go para colocar caracteres como
+   nueva linea, tabulador, campana,..., etc. De igual forma puede utilizar la
+   sintaxis c para "colocar" caracteres en notacion octal, hexadecimal o
+   unicode.
+
+** algunos ejemplos de uso
+
+   El fichero =regexp4_test.go= contiene una amplia variedad de pruebas que son
+   utiles como ejemplos de uso, entre estos se encuentran los siguentes:
+
+   #+BEGIN_SRC go
+     re.Match( "07-07-1777", "<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>" );
+   #+END_SRC
+
+   captura una cadena con formato de fecha, de forma separada dia, separador,
+   mes y año. El separador tiene que coincider las dos ocaciones que aparece
+
+   #+BEGIN_SRC go
+      re.Match( "https://en.wikipedia.org/wiki/Regular_expression", "(https?|ftp):://<[^:s/:<:>]+></[^:s:.:<:>,/]+>*<.>*" );
+   #+END_SRC
+
+   capturar algo parecido a un enlace web
+
+   #+BEGIN_SRC go
+     re.Match( "<mail>nasciiboy@gmail.com</mail>", "<[_A-Za-z0-9:-]+(:.[_A-Za-z0-9:-]+)*>:@<[A-Za-z0-9]+>:.<[A-Za-z0-9]+><:.[A-Za-z0-9]{2}>*" );
+   #+END_SRC
+
+   capturar por secciones (usuario,sitio,dominio) algo parecido a un correo.
+
+   #+BEGIN_SRC go
+      re.Match( "xx0123yy", "<xx><yy>*#!<yy>" );
+   #+END_SRC
+
+   capturar una cadena que contenga "xx", luego captura cualquier cosa que no
+   sea "yy" y finalmente captura nuevamente "yy"
+
+* Hacking
+** algoritmo
+*** Diagrama de flujo
+
+    Esta diagrama es una aproximacion del funcionimento del motor, los nombres no
+    se corresponden con los nombres del codigo, para una explicacion completa
+    revisar el [[https://github.com/nasciiboy/raptor-book/][libro]]
+
+    #+BEGIN_EXAMPLE
+          ┌──────┐
+          │inicio│
+          └──────┘
+              │◀───────────────────────────────────┐
+              ▼                                    │
+      ┌────────────────┐                           │
+      │bucle por cadena│                           │
+      └────────────────┘                           │
+              │                                    │
+              ▼                                    │
+       ┌─────────────┐  no   ┌─────────────┐       │
+      <│fin de cadena│>────▶<│buscar regexp│>──────┘
+       └─────────────┘       └─────────────┘  no coincide
+              │ si                  │ coincide
+              ▼                     ▼
+      ┌────────────────┐    ┌────────────────┐
+      │informar: no    │    │informar:       │
+      │hay coincidencia│    │hay coincidencia│
+      └────────────────┘    └────────────────┘
+              │                     │
+              │◀────────────────────┘
+              ▼
+            ┌───┐
+            │fin│
+            └───┘
+    #+END_EXAMPLE
+
+    En esta version de @c(buscar regexp) todos los constructores se optienen por
+    una sola funcion:
+
+    #+BEGIN_EXAMPLE
+                                                                  ┌───────────────────────────────┐
+      ┏━━━━━━━━━━━━━┓                                             ▼                               │
+      ┃buscar regexp┃                                   ┌───────────────────┐                     │
+      ┗━━━━━━━━━━━━━┛                                   │Optener constructor│                     │
+                                                        └───────────────────┘                     │
+                                                                  │                               │
+                                                                  ▼                               │
+                                                          ┌───────────────┐  no  ┌─────────────┐  │
+                                                         <│hay constructor│>────▶│terminar: la │  │
+                                                          └───────────────┘      │ruta coincide│  │
+                                                                  │ si           └─────────────┘  │
+                                    ┌──────────┬────────┬─────────┼───────────┬──────────┐        │
+                                    ▼          ▼        ▼         ▼           ▼          ▼        │
+                              ┌───────────┐┌────────┐┌─────┐┌────────────┐┌────────┐┌──────────┐  │
+                              │alternacion││conjunto││punto││metacaracter││caracter││agrupacion│  │
+                              └───────────┘└────────┘└─────┘└────────────┘└────────┘└──────────┘  │
+                                    │          │        │         │           │          │        │
+                                    ▼          └────────┴─────────┼───────────┘          └────────┤
+                             ┌──────────────────┐                 │                               │
+                  ┌──────────│ guardar posicion │                 ▼               no              │
+                  │          └──────────────────┘       ┌──────────────────┐   coincide           │
+                  │          ┌──────────────────┐      <│buscar constructor│>─────────┐           │
+                  ▼◀─────────│restaurar posicion│◀──┐   └──────────────────┘          │           │
+           ┌───────────────┐ └──────────────────┘   │             │ coincide          │           │
+           │recorrer rutas │                        │             ▼                   ▼           │
+           └───────────────┘                        │    ┌──────────────────┐ ┌────────────────┐  │
+                  │                                 │    │avanzar por cadena│ │terminar, ruta  │  │
+                  ▼                                 │    └──────────────────┘ │sin coincidencia│  │
+              ┌────────┐   si     ┌─────────────┐   │             │           └────────────────┘  │
+             <│hay ruta│>───────▶<│buscar regexp│>──┘             └───────────────────────────────┘
+              └────────┘          └─────────────┘ no coincide
+                  │ no           coincide │
+                  ▼                       ▼
+      ┌─────────────────────────┐ ┌─────────────┐
+      │terminar sin coincidencia│ │terminar, la │
+      └─────────────────────────┘ │ruta coincide│
+                                  └─────────────┘
+    #+END_EXAMPLE
+
+    =buscar regexp=: diseño actual
+
+    #+BEGIN_EXAMPLE
+                    ┌──────────────────┐
+                    │ guardar posicion │                                 ┏━━━━━━━━━━━━━┓
+                    └──────────────────┘                                 ┃buscar regexp┃
+               ┌────────────▶│                                           ┗━━━━━━━━━━━━━┛
+               │             ▼
+               │      ┌───────────────┐
+               │      │recorrer rutas │
+               │      └───────────────┘
+               │             │                         ┌─────────────────────────────────┐
+               │             ▼                         ▼                                 │
+               │         ┌────────┐   si     ┌───────────────────┐                       │
+               │        <│hay ruta│>────────▶│obtener constructor│                       │
+               │         └────────┘          └───────────────────┘                       │
+               │             │ no                      │                                 │
+               │             ▼                         ▼                                 │
+               │ ┌─────────────────────────┐   ┌───────────────┐  no  ┌─────────────┐    │
+               │ │terminar sin coincidencia│  <│hay constructor│>────▶│terminar: la │    │
+               │ └─────────────────────────┘   └───────────────┘      │ruta coincide│    │
+               │                                       │ si           └─────────────┘    │
+               │                    ┌────────┬─────────┼───────────┬──────────┐          │
+               │                    ▼        ▼         ▼           ▼          ▼          │
+      ┌──────────────────┐      ┌────────┐┌─────┐┌────────────┐┌────────┐┌──────────┐    │
+      │restaurar posicion│      │conjunto││punto││metacaracter││caracter││agrupacion│    │
+      └──────────────────┘      └────────┘└─────┘└────────────┘└────────┘└──────────┘    │
+               ▲                    │        │         │           │          │          │
+               │                    └────────┴─────────┼───────────┘          │          │
+               │                                       ▼                      ▼          │
+       ┌────────────────┐    no coincide     ┌──────────────────┐      ┌─────────────┐   │
+       │terminar: ruta  │◀────────┬─────────<│buscar constructor│>  ┌─<│buscar regexp│>  │
+       │sin coincidencia│         │          └──────────────────┘   │  └─────────────┘   │
+       └────────────────┘         │                    │ coincide   │         │          │
+                                  └──────────────────┈┈│┈┈──────────┘         │ coincide │
+                                                       ▼                      │          │
+                                              ┌──────────────────┐            └──────────┤
+                                              │avanzar por cadena│                       │
+                                              └──────────────────┘                       │
+                                                       │                                 │
+                                                       └─────────────────────────────────┘
+    #+END_EXAMPLE
+
+* Todo
+
+  1. Pruebas de rendimiento
+
+  2. Paralelizar la busqueda de rutas
+
+* Licencia
+
+  Este proyecto no es de codigo "abierto", es *software libre*, y acorde a
+  ello se utiliza la licencia GNU GPL Version 3. Cualquier obra que incluya o
+  derive codigo de esta libreria, debera cumplir con los terminos de esta
+  licencia.
+
+* Contacto, contribucion y otras cosas
+
+  [[mailto:nasciiboy@gmail.com]]
