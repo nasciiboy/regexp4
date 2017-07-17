@@ -580,27 +580,18 @@ func (r *RE) Result  () int { return r.result }
 func (r *RE) TotCatch() int { return r.catchIndex - 1 }
 
 func (r *RE) GetCatch( index int ) string {
-  if index > 0 && index < r.catchIndex {
-    return r.txt[ r.catches[index].init : r.catches[index].end ]
-  }
-
-  return ""
+  if index < 1 || index >= r.catchIndex { return "" }
+  return r.txt[ r.catches[index].init : r.catches[index].end ]
 }
 
 func (r *RE) GpsCatch( index int ) int {
-  if index > 0 && index < r.catchIndex {
-    return r.catches[index].init
-  }
-
-  return 0
+  if index < 1 || index >= r.catchIndex { return 0 }
+  return r.catches[index].init
 }
 
 func (r *RE) LenCatch( index int ) int {
-  if index > 0 && index < r.catchIndex {
-    return r.catches[index].end - r.catches[index].init
-  }
-
-  return 0
+  if index < 1 || index >= r.catchIndex { return 0 }
+  return r.catches[index].end - r.catches[index].init
 }
 
 func (r *RE) RplCatch( rplStr string, id int ) (result string) {
@@ -616,7 +607,7 @@ func (r *RE) RplCatch( rplStr string, id int ) (result string) {
 
   if last < len(r.txt) { result += r.txt[last:] }
 
-  return string(result)
+  return
 }
 
 func (r *RE) PutCatch( pStr string ) (result string) {

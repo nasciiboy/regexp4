@@ -132,35 +132,38 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
     // compila la regexp
     re.Compile( re string ) *RE
 
-    // busqueda, retorna numero de coincidencias
+    // busqueda, regresa numero de coincidencias
     re.MatchString( txt string ) int
 
-    // busqueda, retorna resultado booleano de la busqueda
+    // busqueda, regresa resultado booleano de la busqueda
     re.FindString ( txt string ) bool
 
-    // compilacion y busqueda, retorna numero de coincidencias
+    // compilacion y busqueda, regresa numero de coincidencias
     re.Match( txt, re string ) int
 
-    // compilacion y busqueda, retorna resultado booleano de la busqueda
+    // compilacion y busqueda, regresa resultado booleano de la busqueda
     re.Find ( txt, re string ) bool
 
-    // retorna numero de capturas
+    // regresa el numero de coincidencias
+    re.Result() int
+
+    // regresa numero de capturas
     re.TotCatch() int
 
-    // retorna una captura por su indice
+    // regresa una captura por su indice
     re.GetCatch( index int ) string
 
-    // retorna la posicion de inicio de la captura o 0 (?)
+    // regresa la posicion de inicio de la captura o 0 (?)
     re.GpsCatch( index int ) int
 
-    // retorna la longitud de la captura o 0 (?)
+    // regresa la longitud de la captura o 0 (?)
     re.LenCatch( index int ) int
 
-    // Reemplaza el contenido de una captura por rplStr, por su id
+    // reemplaza el contenido de una captura por rplStr, por su id
     // regresa la cadena resultante
     re.RplCatch( rplStr string, id int ) string
 
-    // Crea una cadena con las capturas y texto indicados en pText
+    // crea una cadena con las capturas y texto indicados en pText
     // regresa la cadena resultante
     re.PutCatch( pText string ) string
   #+END_SRC
@@ -573,6 +576,7 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
    - =:W= :: cualquier carácter no alfanumérico.
    - =:s= :: cualquier caracter de espacio en blanco.
    - =:S= :: cualquier carácter que no sea un espacio en blanco.
+   - =:&= :: cualquier carácter no ascii (>= 128)
 
    - =:|= :: barra vertical
    - =:^= :: acento circunflejo

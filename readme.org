@@ -138,6 +138,9 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
     // compilation and search, return boolean result
     re.Find ( txt, re string ) bool
 
+    // return number of matches
+    re.Result() int
+
     // return number of catches
     re.TotCatch() int
 
