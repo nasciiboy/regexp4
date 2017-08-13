@@ -14,12 +14,10 @@ const (
 )
 
 const (
-  asmPathIni = iota; asmPathEle; asmPathEnd;
-  asmGroupIni; asmGroupEnd; asmHookIni; asmHookEnd; asmSetIni; asmSetEnd;
+  asmPath = iota; asmPathEle; asmPathEnd;
+  asmGroup; asmGroupEnd; asmHook; asmHookEnd; asmSet; asmSetEnd;
   asmBackref; asmMeta; asmRangeab; asmUTF8; asmPoint; asmSimple; asmEnd
 )
-
-const ( rePath uint8 = iota; reGroup; reHook; reSet; reBackref; reMeta; reRangeab; reUTF8; rePoint; reSimple )
 
 type reStruct struct {
   str                string
@@ -28,14 +26,12 @@ type reStruct struct {
   loopsMin, loopsMax int
 }
 
-type catchInfo struct {
-  init, end, id int
-}
+type catchInfo struct { init, end, id int }
 
 type raptorASM struct {
+  re    reStruct
   inst  uint8
   close int
-  re    reStruct
 }
 
 type RE struct {
@@ -60,15 +56,16 @@ func (r *RE) Compile( re string ){
   r.compile    = false
   if len(re) == 0 { return }
 
-  rexp := reStruct{ str: re, reType: rePath }
+  rexp := reStruct{ str: re, reType: asmPath }
   r.re  = re
   r.asm = make( []raptorASM, 0, 32 )
 
   getMods( &rexp, &rexp )
   r.mods = rexp.mods
 
-  if isPath( &rexp ) { r.genPaths( rexp )
-  } else { r.genTracks( &rexp ) }
+  r.genPaths( rexp )
+  // if isPath( &rexp ) { r.genPaths( rexp )
+  // } else { r.genTracks( &rexp ) }
 
   r.asm = append( r.asm, raptorASM{ inst: asmEnd, close: len(r.asm) } )
   r.compile = true
@@ -89,12 +86,12 @@ func isPath( rexp *reStruct ) bool {
   return false
 }
 
-func (r *RE) genPaths( rexp reStruct ) {
+func (r *RE) genPaths( rexp reStruct ){
   var track reStruct
   pathIndex := len( r.asm )
-  r.asm = append( r.asm, raptorASM{ inst: asmPathIni, re: rexp } )
+  r.asm = append( r.asm, raptorASM{ inst: asmPath, re: rexp } )
 
-  for cutByType( &rexp, &track, rePath ) {
+  for cutByType( &rexp, &track, asmPath ) {
     trackIndex := len( r.asm )
     r.asm = append( r.asm, raptorASM{ inst: asmPathEle, re: track } )
     r.genTracks( &track )
@@ -110,30 +107,32 @@ func (r *RE) genTracks( rexp *reStruct ){
   for tracker( rexp, &track ) {
     trackIndex := len( r.asm )
     switch track.reType {
-    case reHook   :
-      r.asm = append( r.asm, raptorASM{ inst: asmHookIni, re: track } )
+    case asmHook   :
+      r.asm = append( r.asm, raptorASM{ inst: asmHook, re: track } )
 
-      if isPath( &track ) { r.genPaths ( track )
-      } else              { r.genTracks( &track ) }
+      r.genPaths ( track )
+      // if isPath( &track ) { r.genPaths ( track )
+      // } else              { r.genTracks( &track ) }
 
       r.asm[trackIndex].close = len( r.asm )
       r.asm = append( r.asm, raptorASM{ inst: asmHookEnd, close: len(r.asm) } )
-    case reGroup  :
-      r.asm = append( r.asm, raptorASM{ inst: asmGroupIni, re: track } )
+    case asmGroup  :
+      r.asm = append( r.asm, raptorASM{ inst: asmGroup, re: track } )
 
-      if isPath( &track ) { r.genPaths ( track )
-      } else              { r.genTracks( &track ) }
+      r.genPaths ( track )
+      // if isPath( &track ) { r.genPaths ( track )
+      // } else              { r.genTracks( &track ) }
 
       r.asm[trackIndex].close = len( r.asm )
       r.asm = append( r.asm, raptorASM{ inst: asmGroupEnd, close: len(r.asm) } )
-    case rePath   :
-    case reSet    : r.genSet( &track )
-    case reBackref: r.asm = append( r.asm, raptorASM{ inst: asmBackref, close: trackIndex, re: track } )
-    case reMeta   : r.asm = append( r.asm, raptorASM{ inst: asmMeta   , close: trackIndex, re: track } )
-    case reRangeab: r.asm = append( r.asm, raptorASM{ inst: asmRangeab, close: trackIndex, re: track } )
-    case reUTF8   : r.asm = append( r.asm, raptorASM{ inst: asmUTF8   , close: trackIndex, re: track } )
-    case rePoint  : r.asm = append( r.asm, raptorASM{ inst: asmPoint  , close: trackIndex, re: track } )
-    default       : r.asm = append( r.asm, raptorASM{ inst: asmSimple , close: trackIndex, re: track } )
+    case asmPath   :
+    case asmSet    : r.genSet( &track )
+    case asmBackref: r.asm = append( r.asm, raptorASM{ inst: asmBackref, close: trackIndex, re: track } )
+    case asmMeta   : r.asm = append( r.asm, raptorASM{ inst: asmMeta   , close: trackIndex, re: track } )
+    case asmRangeab: r.asm = append( r.asm, raptorASM{ inst: asmRangeab, close: trackIndex, re: track } )
+    case asmUTF8   : r.asm = append( r.asm, raptorASM{ inst: asmUTF8   , close: trackIndex, re: track } )
+    case asmPoint  : r.asm = append( r.asm, raptorASM{ inst: asmPoint  , close: trackIndex, re: track } )
+    default        : r.asm = append( r.asm, raptorASM{ inst: asmSimple , close: trackIndex, re: track } )
     }
   }
 }
@@ -147,20 +146,20 @@ func (r *RE) genSet( rexp *reStruct ){
     } else                         { rexp.mods |= modNegative }
   }
 
-  SetIndex := len( r.asm )
-  r.asm = append( r.asm, raptorASM{ inst: asmSetIni, re: *rexp } )
+  setIndex := len( r.asm )
+  r.asm = append( r.asm, raptorASM{ inst: asmSet, re: *rexp } )
 
   var track reStruct
   for trackerSet( rexp, &track ) {
     switch track.reType {
-    case reMeta   : r.asm = append( r.asm, raptorASM{ inst: asmMeta   , close: len(r.asm), re: track } )
-    case reRangeab: r.asm = append( r.asm, raptorASM{ inst: asmRangeab, close: len(r.asm), re: track } )
-    case reUTF8   : r.asm = append( r.asm, raptorASM{ inst: asmUTF8   , close: len(r.asm), re: track } )
-    default       : r.asm = append( r.asm, raptorASM{ inst: asmSimple , close: len(r.asm), re: track } )
+    case asmMeta   : r.asm = append( r.asm, raptorASM{ inst: asmMeta   , close: len(r.asm), re: track } )
+    case asmRangeab: r.asm = append( r.asm, raptorASM{ inst: asmRangeab, close: len(r.asm), re: track } )
+    case asmUTF8   : r.asm = append( r.asm, raptorASM{ inst: asmUTF8   , close: len(r.asm), re: track } )
+    default        : r.asm = append( r.asm, raptorASM{ inst: asmSimple , close: len(r.asm), re: track } )
     }
   }
 
-  r.asm[SetIndex].close = len( r.asm )
+  r.asm[ setIndex ].close = len( r.asm )
   r.asm = append( r.asm, raptorASM{ inst: asmSetEnd, close: len(r.asm) } )
 }
 
@@ -168,26 +167,26 @@ func trackerSet( rexp, track *reStruct ) bool {
   if len( rexp.str ) == 0 { return false }
 
   if rexp.str[0] > 127 {
-    cutByLen( rexp, track, utf8meter( rexp.str ), reUTF8 )
+    cutByLen( rexp, track, utf8meter( rexp.str ), asmUTF8 )
   } else if rexp.str[0] == ':' {
-    cutByLen ( rexp, track, 2, reMeta  )
+    cutByLen ( rexp, track, 2, asmMeta  )
   } else {
     for i := 0; i < len( rexp.str ); i++ {
       if rexp.str[i] > 127 {
-        cutByLen( rexp, track, i, reSimple  ); goto setLM;
+        cutByLen( rexp, track, i, asmSimple  ); goto setLM;
       } else {
         switch rexp.str[i] {
-        case ':': cutByLen( rexp, track, i, reSimple  ); goto setLM;
+        case ':': cutByLen( rexp, track, i, asmSimple  ); goto setLM;
         case '-':
-          if i == 1 { cutByLen( rexp, track,     3, reRangeab )
-          } else    { cutByLen( rexp, track, i - 1, reSimple  ) }
+          if i == 1 { cutByLen( rexp, track,     3, asmRangeab )
+          } else    { cutByLen( rexp, track, i - 1, asmSimple  ) }
 
           goto setLM;
         }
       }
     }
 
-    cutByLen( rexp, track, len( rexp.str ), reSimple  );
+    cutByLen( rexp, track, len( rexp.str ), asmSimple  );
   }
 
  setLM:
@@ -200,17 +199,17 @@ func tracker( rexp, track *reStruct ) bool {
   if len( rexp.str ) == 0 { return false }
 
   if rexp.str[0] > 127 {
-    cutByLen( rexp, track, utf8meter( rexp.str ), reUTF8 )
+    cutByLen( rexp, track, utf8meter( rexp.str ), asmUTF8 )
   } else {
     switch rexp.str[0] {
-    case ':': cutByLen ( rexp, track, 2,     reMeta    )
-    case '.': cutByLen ( rexp, track, 1,     rePoint   )
+    case ':': cutByLen ( rexp, track, 2,     asmMeta    )
+    case '.': cutByLen ( rexp, track, 1,     asmPoint   )
     case '@': cutByLen ( rexp, track, 1 +
-            countCharDigits( rexp.str[1:] ), reBackref )
-    case '(': cutByType( rexp, track,        reGroup   )
-    case '<': cutByType( rexp, track,        reHook    )
-    case '[': cutByType( rexp, track,        reSet     )
-    default : cutSimple( rexp, track                   )
+            countCharDigits( rexp.str[1:] ), asmBackref )
+    case '(': cutByType( rexp, track,        asmGroup   )
+    case '<': cutByType( rexp, track,        asmHook    )
+    case '[': cutByType( rexp, track,        asmSet     )
+    default : cutSimple( rexp, track                    )
     }
   }
 
@@ -222,20 +221,20 @@ func tracker( rexp, track *reStruct ) bool {
 func cutSimple( rexp, track *reStruct ){
   for i, c := range rexp.str {
     if c > 127 {
-      cutByLen( rexp, track, i, reSimple  ); return
+      cutByLen( rexp, track, i, asmSimple  ); return
     } else {
       switch c {
       case '(', '<', '[', '@', ':', '.':
-        cutByLen( rexp, track, i, reSimple  ); return
+        cutByLen( rexp, track, i, asmSimple  ); return
       case '?', '+', '*', '{', '#':
-        if i == 1 { cutByLen( rexp, track,     1, reSimple  )
-        } else    { cutByLen( rexp, track, i - 1, reSimple  ) }
+        if i == 1 { cutByLen( rexp, track,     1, asmSimple  )
+        } else    { cutByLen( rexp, track, i - 1, asmSimple  ) }
         return
       }
     }
   }
 
-  cutByLen( rexp, track, len(rexp.str), reSimple  );
+  cutByLen( rexp, track, len(rexp.str), asmSimple  );
 }
 
 func cutByLen( rexp, track *reStruct, length int, reType uint8 ){
@@ -258,15 +257,15 @@ func cutByType( rexp, track *reStruct, reType uint8 ) bool {
     }
 
     switch reType {
-    case reHook, reGroup: cut = deep == 0
-    case reSet          : cut = rexp.str[ i ] == ']'
-    case rePath         : cut = rexp.str[ i ] == '|' && deep == 0
+    case asmHook, asmGroup: cut = deep == 0
+    case asmSet          : cut = rexp.str[ i ] == ']'
+    case asmPath         : cut = rexp.str[ i ] == '|' && deep == 0
     }
 
     if cut {
       track.str  = rexp.str[:i]
       rexp.str   = rexp.str[i + 1:]
-      if reType != rePath { track.str = track.str[1:] }
+      if reType != asmPath { track.str = track.str[1:] }
       return true
     }
   }
@@ -390,13 +389,13 @@ func (r *RE) trekking( index int ) (result bool) {
   for ; r.asm[ index ].inst != asmEnd; index = r.asm[ index ].close + 1 {
     switch r.asm[ index ].inst {
     case asmPathEnd, asmPathEle, asmGroupEnd, asmHookEnd, asmSetEnd: return true
-    case asmHookIni :
+    case asmHook :
       iCatch := r.openCatch();
       result  = r.loopGroup( index )
       if result { r.closeCatch( iCatch ) }
-    case asmGroupIni: result = r.loopGroup( index )
-    case asmPathIni : result = r.walker   ( index )
-    default         : result = r.looper   ( index )
+    case asmGroup: result = r.loopGroup( index )
+    case asmPath : result = r.walker   ( index )
+    default      : result = r.looper   ( index )
     }
 
     if !result { return false }
@@ -457,13 +456,13 @@ func (r *RE) loopGroup( index int ) bool {
 }
 
 func (r *RE) match( index int, txt string, forward *int ) bool {
-  switch r.asm[ index ].re.reType {
-  case rePoint  : *forward = utf8meter( txt );  return true
-  case reSet    : return r.matchSet    ( index, txt, forward )
-  case reBackref: return r.matchBackRef( &r.asm[ index ].re, txt, forward )
-  case reRangeab: return matchRange    ( &r.asm[ index ].re, txt, forward )
-  case reMeta   : return matchMeta     ( &r.asm[ index ].re, txt, forward )
-  default       : return matchText     ( &r.asm[ index ].re, txt, forward )
+  switch r.asm[ index ].inst {
+  case asmPoint  : *forward = utf8meter( txt );  return true
+  case asmSet    : return r.matchSet    ( index, txt, forward )
+  case asmBackref: return r.matchBackRef( &r.asm[ index ].re, txt, forward )
+  case asmRangeab: return matchRange    ( &r.asm[ index ].re, txt, forward )
+  case asmMeta   : return matchMeta     ( &r.asm[ index ].re, txt, forward )
+  default        : return matchText     ( &r.asm[ index ].re, txt, forward )
   }
 }
 

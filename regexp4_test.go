@@ -23,22 +23,22 @@ func printASM( rexp *RE ){
     fmt.Printf( "[%3d][%3d]", i, v.close )
 
     switch v.inst {
-    case  0: fmt.Printf( "[%-12s]", "asmPathIni" )
-    case  1: fmt.Printf( "[%-12s]", "asmPathEle" )
-    case  2: fmt.Printf( "[%-12s]", "asmPathEnd" )
-    case  3: fmt.Printf( "[%-12s]", "asmGroupIni" )
+    case  0: fmt.Printf( "[%-12s]", "asmPath"     )
+    case  1: fmt.Printf( "[%-12s]", "asmPathEle"  )
+    case  2: fmt.Printf( "[%-12s]", "asmPathEnd"  )
+    case  3: fmt.Printf( "[%-12s]", "asmGroup"    )
     case  4: fmt.Printf( "[%-12s]", "asmGroupEnd" )
-    case  5: fmt.Printf( "[%-12s]", "asmHookIni" )
-    case  6: fmt.Printf( "[%-12s]", "asmHookEnd" )
-    case  7: fmt.Printf( "[%-12s]", "asmSetIni" )
-    case  8: fmt.Printf( "[%-12s]", "asmSetEnd" )
-    case  9: fmt.Printf( "[%-12s]", "asmBackref" )
-    case 10: fmt.Printf( "[%-12s]", "asmMeta" )
-    case 11: fmt.Printf( "[%-12s]", "asmRangeab" )
-    case 12: fmt.Printf( "[%-12s]", "asmUTF8" )
-    case 13: fmt.Printf( "[%-12s]", "asmPoint" )
-    case 14: fmt.Printf( "[%-12s]", "asmSimple" )
-    case 15: fmt.Printf( "[%-12s]", "asmEnd" )
+    case  5: fmt.Printf( "[%-12s]", "asmHook"     )
+    case  6: fmt.Printf( "[%-12s]", "asmHookEnd"  )
+    case  7: fmt.Printf( "[%-12s]", "asmSet"      )
+    case  8: fmt.Printf( "[%-12s]", "asmSetEnd"   )
+    case  9: fmt.Printf( "[%-12s]", "asmBackref"  )
+    case 10: fmt.Printf( "[%-12s]", "asmMeta"     )
+    case 11: fmt.Printf( "[%-12s]", "asmRangeab"  )
+    case 12: fmt.Printf( "[%-12s]", "asmUTF8"     )
+    case 13: fmt.Printf( "[%-12s]", "asmPoint"    )
+    case 14: fmt.Printf( "[%-12s]", "asmSimple"   )
+    case 15: fmt.Printf( "[%-12s]", "asmEnd"      )
     }
 
     fmt.Printf( " %-15q [%d-%d][%08b]\n", v.re.str, v.re.loopsMin, v.re.loopsMax, v.re.mods )
@@ -50,6 +50,8 @@ func showCompile(t *testing.T) {
   re.Compile( "<[:a]a>" )
   printASM( re )
   re.Compile( "#*cas[A-Z]" )
+  printASM( re )
+  re.Compile( "#^$<:b*:|(:|+#!:|)+>" )
   printASM( re )
 }
 
@@ -1148,6 +1150,9 @@ func cTest( t *testing.T ){
     { "1234567 ::89abc", "#^<:b::{2}>+#!:b::{2}<.+>", 2, "89abc" },
     { "- 1234567 ::89abc", "#^:b*-:b+<::{2}>+#!::{2}", 1, "1234567 " },
     { "- 1234567 ::89abc", "#^:b*-:b+<:b::{2}>+#!:b::{2}", 1, "1234567" },
+
+    { "| | text", "#^$<:s*>", 1, "" },
+    { "| | text", "#^$<:b*:|(:|+#!:|)+>", 1, "" },
   }
 
   done := make(chan struct{})
@@ -1158,8 +1163,9 @@ func cTest( t *testing.T ){
       r.FindString( txt )
       catch := r.GetCatch( nCatch )
       if catch != eCatch  {
-        t.Errorf( "Regexp4( \"%s\", \"%s\" )\nGetCatch( %d ) == %s, expected %s",
+        t.Errorf( "Regexp4( %q, %q )\nGetCatch( %d ) == %q, expected %q",
                   txt, re, nCatch, catch, eCatch )
+        t.Errorf( "len( %d )", r.LenCatch( 1 ) )
       }
       done <- struct{}{}
     }( c.txt, c.re, c.n, c.catch )

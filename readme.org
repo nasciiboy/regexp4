@@ -566,8 +566,10 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
    - =:A= :: any character other than a letter
    - =:w= :: any alphanumeric character.
    - =:W= :: any non-alphanumeric character.
-   - =:s= :: any blank space character.
-   - =:S= :: any character other than a blank.
+   - =:s= :: =[ \t-\r]=
+   - =:S= :: =[^ \t-\r]=
+   - =:b= :: =[ \t]=
+   - =:B= :: =[^ \t]=
    - =:&= :: no ascii character (>= 128)
 
    - =:|= :: Vertical bar

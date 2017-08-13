@@ -574,8 +574,10 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
    - =:A= :: cualquier caracter que no sea una letra
    - =:w= :: cualquier carácter alfanumérico.
    - =:W= :: cualquier carácter no alfanumérico.
-   - =:s= :: cualquier caracter de espacio en blanco.
-   - =:S= :: cualquier carácter que no sea un espacio en blanco.
+   - =:s= :: =[ \t-\r]=
+   - =:S= :: =[^ \t-\r]=
+   - =:b= :: =[ \t]=
+   - =:B= :: =[^ \t]=
    - =:&= :: cualquier carácter no ascii (>= 128)
 
    - =:|= :: barra vertical
