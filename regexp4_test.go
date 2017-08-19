@@ -15,6 +15,7 @@ package regexp4
 
 import "testing"
 import "fmt"
+import "bytes"
 
 func printASM( rexp *RE ){
   fmt.Printf( "                     init %q\n", rexp.re )
@@ -1001,7 +1002,7 @@ func nTest( t *testing.T ){
       x := r.MatchString( txt )
 
       if x != n  {
-        t.Errorf( "Regexp4( \"%s\", \"%s\" ) == %d, expected %d", txt, re, x, n )
+        t.Errorf( "Regexp4( %q, %q ) == %d, expected %d", txt, re, x, n )
       }
       done <- struct{}{}
     }( c.txt, c.re, c.n )
@@ -1165,7 +1166,6 @@ func cTest( t *testing.T ){
       if catch != eCatch  {
         t.Errorf( "Regexp4( %q, %q )\nGetCatch( %d ) == %q, expected %q",
                   txt, re, nCatch, catch, eCatch )
-        t.Errorf( "len( %d )", r.LenCatch( 1 ) )
       }
       done <- struct{}{}
     }( c.txt, c.re, c.n, c.catch )
@@ -1315,7 +1315,7 @@ func dTest( t *testing.T ){
       r.Match( txt, re )
       x := r.TotCatch()
       if x != n  {
-        t.Errorf( "Regexp4( \"%s\", \"%s\" )\nTotCatch() == %d, expected %d",
+        t.Errorf( "Regexp4( %q, %q )\nTotCatch() == %d, expected %d",
                   txt, re, x, n )
       }
       done <- struct{}{}
@@ -1450,7 +1450,7 @@ func sTest( t *testing.T ){
     re.Match( c.txt, c.re )
     swap := re.RplCatch( c.swap, c.n )
     if swap != c.expected {
-      t.Errorf( "Regexp4( \"%s\", \"%s\" )\nRplCatch( %s, %d ) == %s, expected %s",
+      t.Errorf( "Regexp4( %q, %q )\nRplCatch( %q, %d ) == %q\n             expected %q",
                 c.txt, c.re, c.swap, c.n, swap, c.swap )
     }
   }
@@ -1514,7 +1514,7 @@ func pTest( t *testing.T ){
     re.Find( c.txt, c.re )
     put := re.PutCatch( c.put )
     if put != c.expected {
-      t.Errorf( "Regexp4( \"%s\", \"%s\" )\nPutCatch( %s ) == %s, expected %s",
+      t.Errorf( "Regexp4( %q, %q )\nPutCatch( %q ) == %q, expected %q",
                 c.txt, c.re, c.put, put, c.expected )
     }
   }
@@ -1548,7 +1548,7 @@ func gTest( t *testing.T ){
     re.Match( c.txt, c.re )
     pos := re.GpsCatch( c.catch )
     if pos != c.pos {
-      t.Errorf( "Regexp4( \"%s\", \"%s\" )\nGpsCatch( %d ) == %d, expected %d",
+      t.Errorf( "Regexp4( %q, %q )\nGpsCatch( %d ) == %d, expected %d",
                 c.txt, c.re, c.catch, pos, c.pos )
     }
   }
@@ -1739,7 +1739,7 @@ func nTestUTF( t *testing.T ){
       x := r.MatchString( txt )
 
       if x != n  {
-        t.Errorf( "Regexp4( \"%s\", \"%s\" ) == %d, expected %d", txt, re, x, n )
+        t.Errorf( "Regexp4( %q, %q ) == %d, expected %d", txt, re, x, n )
       }
       done <- struct{}{}
     }( c.txt, c.re, c.n )
@@ -1837,7 +1837,7 @@ func cTestUTF( t *testing.T ){
       r.Match( txt, re )
       catch := r.GetCatch( nCatch )
       if catch != eCatch  {
-        t.Errorf( "Regexp4( \"%s\", \"%s\" )\nGetCatch( %d ) == %s, expected %s",
+        t.Errorf( "Regexp4( %q, %q )\nGetCatch( %d ) == %q, expected %q",
                   txt, re, nCatch, catch, eCatch )
       }
       done <- struct{}{}
@@ -1970,7 +1970,7 @@ func sTestUTF( t *testing.T ){
     re.Match( c.txt, c.re )
     swap := re.RplCatch( c.swap, c.n )
     if swap != c.expected {
-      t.Errorf( "Regexp4( \"%s\", \"%s\" )\nRplCatch( %s, %d ) == %s, expected %s",
+      t.Errorf( "Regexp4( %q, %q )\nRplCatch( %q, %d ) == %q\n             expected %q",
                 c.txt, c.re, c.swap, c.n, swap, c.swap )
     }
   }
@@ -2006,7 +2006,7 @@ func pTestUTF( t *testing.T ){
     re.Match( c.txt, c.re )
     put := re.PutCatch( c.put )
     if put != c.expected {
-      t.Errorf( "Regexp4( \"%s\", \"%s\" )\nPutCatch( %s ) == %s, expected %s",
+      t.Errorf( "Regexp4( %q, %q )\nPutCatch( %q ) == %q, expected %q",
                 c.txt, c.re, c.put, put, c.expected )
     }
   }
@@ -2036,8 +2036,170 @@ func gTestUTF( t *testing.T ){
     pos := re.GpsCatch( c.catch )
     len := re.LenCatch( c.catch )
     if pos != c.pos || len != c.len {
-      t.Errorf( "Regexp4( \"%s\", \"%s\" )\nGpsCatch( %d ) == %d, expected %d\nLenCatch( %d ) == %d, expected %d",
+      t.Errorf( "Regexp4( %q, %q )\nGpsCatch( %d ) == %d, expected %d\nLenCatch( %d ) == %d, expected %d",
                 c.txt, c.re, c.catch, pos, c.pos, c.catch, len, c.len )
+    }
+  }
+}
+
+////////////// INTERNAL-COMPARATIVE-BENCHMARKS
+/// Find vs [Compile() + Copy().FindStirng()]
+
+const rebe = "<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>"
+const reco = "07-07-1777"
+
+func BenchmarkFind(b *testing.B) {
+  var re RE
+  for i := 0; i < b.N; i++ {
+    if !re.Find( reco, rebe ) {
+      b.Errorf( "BenchmarkFind: re.Find(): no-match" )
+    }
+  }
+}
+
+var reFi = Compile( rebe )
+
+func BenchmarkFindCopy(b *testing.B) {
+  for i := 0; i < b.N; i++ {
+    if !reFi.Copy().FindString( reco ) {
+      b.Errorf( "BenchmarkFindCopy: re.Find(): no-match" )
+    }
+  }
+}
+
+const rebe2 = "#^<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>"
+const rebe3 = "#*$<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>"
+
+func BenchmarkFind3X(b *testing.B) {
+  var re RE
+  for i := 0; i < b.N; i++ {
+    if !re.Find( reco, rebe ) {
+      b.Errorf( "BenchmarkFind: re.Find(): no-match" )
+    }
+    if !re.Find( reco, rebe2 ) {
+      b.Errorf( "BenchmarkFind: re.Find(): no-match" )
+    }
+    if !re.Find( reco, rebe3 ) {
+      b.Errorf( "BenchmarkFind: re.Find(): no-match" )
+    }
+  }
+}
+
+var reFi2 = Compile( rebe2 )
+var reFi3 = Compile( rebe3 )
+
+func BenchmarkFindCopy3X(b *testing.B) {
+  for i := 0; i < b.N; i++ {
+    if !reFi.Copy().FindString( reco ) {
+      b.Errorf( "BenchmarkFindCopy: re.Find(): no-match" )
+    }
+    if !reFi2.Copy().FindString( reco ) {
+      b.Errorf( "BenchmarkFindCopy: re.Find(): no-match" )
+    }
+    if !reFi3.Copy().FindString( reco ) {
+      b.Errorf( "BenchmarkFindCopy: re.Find(): no-match" )
+    }
+  }
+}
+
+const srebe = "#^text"
+const sreco = "text"
+
+func BenchmarkFindSimple(b *testing.B) {
+  var re RE
+  for i := 0; i < b.N; i++ {
+    if !re.Find( sreco, srebe ) {
+      b.Errorf( "BenchmarkFind: re.Find(): no-match" )
+    }
+  }
+}
+
+var reSi = Compile( srebe )
+
+func BenchmarkFindCopySimple(b *testing.B) {
+  for i := 0; i < b.N; i++ {
+    if !reSi.Copy().FindString( sreco ) {
+      b.Errorf( "BenchmarkFindCopy: re.Find(): no-match" )
+    }
+  }
+}
+
+// RplCatch (string vs []byte vs bytes.buffer)
+
+func (r *RE) OldRplCatch( rplStr string, id int ) (result string) {
+  last := 0
+
+  for index := 1; index < r.catchIndex; index++ {
+    if r.catches[index].id == id {
+      if last > r.catches[index].init { last = r.catches[index].init }
+
+      result += r.txt[last:r.catches[index].init]
+      result += rplStr
+      last    = r.catches[index].end
+
+    }
+  }
+
+  if last < len(r.txt) { result += r.txt[last:] }
+
+  return
+}
+
+func (r *RE) BufferRplCatch( rplStr string, id int ) string {
+  last := 0
+  var b bytes.Buffer
+
+  for index := 1; index < r.catchIndex; index++ {
+    if r.catches[index].id == id {
+      if last > r.catches[index].init { last = r.catches[index].init }
+
+      b.WriteString( r.txt[last:r.catches[index].init] )
+      b.WriteString( rplStr )
+      last    = r.catches[index].end
+
+    }
+  }
+
+  if last < len(r.txt) { b.WriteString( r.txt[last:] ) }
+
+  return b.String()
+}
+
+var   rerpl = Compile( "<:s>+" )
+const ssIn  = "  \nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\nline-a\t\v\n\nline-b\n\nline-c\nline-d\t\v\n\nline-en\n"
+const ssSwp = "––"
+const ssOut = "––line-a––line-b––line-c––line-d––line-en––line-a––line-b––line-c––line-d––line-en––line-a––line-b––line-c––line-d––line-en––line-a––line-b––line-c––line-d––line-en––line-a––line-b––line-c––line-d––line-en––line-a––line-b––line-c––line-d––line-en––line-a––line-b––line-c––line-d––line-en––line-a––line-b––line-c––line-d––line-en––"
+
+
+func BenchmarkRplCatchOld( b *testing.B ){
+  r := rerpl.Copy()
+  r.FindString( ssIn )
+
+  for i := 0; i < b.N; i++ {
+    if( r.OldRplCatch( ssSwp, 1 ) != ssOut ){
+      b.Fatalf( "BenchmarkRplCatchOld(): no match" )
+    }
+  }
+}
+
+func BenchmarkRplCatchBuffer( b *testing.B ){
+  r := rerpl.Copy()
+  r.FindString( ssIn )
+
+  for i := 0; i < b.N; i++ {
+    if( r.BufferRplCatch( ssSwp, 1 ) != ssOut ){
+      b.Fatalf( "BenchmarkRplCatchBuffer(): no match" )
+    }
+  }
+}
+
+func BenchmarkRplCatch( b *testing.B ){
+  r := rerpl.Copy()
+  r.FindString( ssIn )
+
+  for i := 0; i < b.N; i++ {
+    if( r.RplCatch( ssSwp, 1 ) != ssOut ){
+      b.Fatalf( "BenchmarkRplCatch(): no match" )
     }
   }
 }

@@ -593,20 +593,33 @@ func (r *RE) LenCatch( index int ) int {
   return r.catches[index].end - r.catches[index].init
 }
 
-func (r *RE) RplCatch( rplStr string, id int ) (result string) {
-  last := 0
-
+func (r *RE) RplCatch( rplStr string, id int ) string {
+  last, rpls, catchLens := 0, 0, 0
   for index := 1; index < r.catchIndex; index++ {
     if r.catches[index].id == id {
-      result += r.txt[last:r.catches[index].init]
-      result += rplStr
-      last    = r.catches[index].end
+      rpls++
+      catchLens += r.catches[index].end - r.catches[index].init
     }
   }
 
-  if last < len(r.txt) { result += r.txt[last:] }
+  if rpls == 0 { return r.txt }
+  if (r.mods & modFwrByChar) > 0 { catchLens = 0 }
 
-  return
+  result, gps := make( []byte, len( r.txt ) - catchLens + rpls * len( rplStr ) ), 0
+
+  for index := 1; index < r.catchIndex; index++ {
+    if r.catches[index].id == id {
+      if last > r.catches[index].init { last = r.catches[index].init } // modFwrByChar
+
+      gps += copy( result[gps:], r.txt[last:r.catches[index].init] )
+      gps += copy( result[gps:], rplStr )
+      last = r.catches[index].end
+    }
+  }
+
+  if last < len(r.txt) { gps += copy( result[gps:], r.txt[last:] ) }
+
+  return string( result[:gps] )
 }
 
 func (r *RE) PutCatch( pStr string ) (result string) {
@@ -637,7 +650,7 @@ func (r *RE) Copy() *RE {
 }
 
 func Compile( re string ) *RE {
-  nre := new( RE )
+  nre :=  new( RE )
   nre.Compile( re )
   return nre
 }

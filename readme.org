@@ -124,7 +124,7 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
     re.Copy() *RE
 
     // compile regexp
-    re.Compile( re string ) *RE
+    re.Compile( re string )
 
     // search, return number of matches
     re.MatchString( txt string ) int

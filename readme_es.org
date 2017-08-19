@@ -130,7 +130,7 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
     re.Copy() *RE
 
     // compila la regexp
-    re.Compile( re string ) *RE
+    re.Compile( re string )
 
     // busqueda, regresa numero de coincidencias
     re.MatchString( txt string ) int
