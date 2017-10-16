@@ -52,7 +52,7 @@ func showCompile(t *testing.T) {
   printASM( re )
   re.Compile( "#*cas[A-Z]" )
   printASM( re )
-  re.Compile( "#^$<:b*:|(:|+#!:|)+>" )
+  re.Compile( "#^$<:b*:|(:|+#*:|)+>" )
   printASM( re )
 }
 
@@ -184,6 +184,14 @@ func nTest( t *testing.T ){
     { "abababababababababababababababababababab", "a{001,000001}" , 20 },
     { "aaaaaaaaaaaaaaaaaaaa", "a{20}", 1 },
     { "abababababababababababababababababababab", "(a|b){1,1}" , 40 },
+
+    { "aaaaaaaaaaaaaaaaaaaa", "a{1}b{0}", 20 },
+    { "aaaaaaaaaaaaaaaaaaaa", "b{0}a{1}", 20 },
+
+    { "aaaaaaaaaaaaaaaaaaaa", "b{0}", 20 },
+    { "bbbbbbbbbbbbbbbbbbbb", "b{0}", 20 },
+    { "bbbbbbbbbbbbbbbbbbbb", "b{1}", 20 },
+    { "bbbbbbbbbbbbbbbbbbbb", "b{2}", 10 },
 
     { "abc", "<b>", 1 },
     { "abc", "a<b>", 1 },
@@ -657,6 +665,8 @@ func nTest( t *testing.T ){
     { "ABC", "#^$A(c|B)(b|C)", 1 },
     { "ABC", "#^$A(B|C)(B|C)", 1 },
     { "ABC", "#^$(A(B|C))(B|C)", 1 },
+    { "ABC", "#^$AB([^C]+)", 0 },
+    { "ABC", "#^$AB(A)+", 0 },
 
     { "ABC", "#^E", 0 },
     { "ABC", "#^EB", 0 },
@@ -833,37 +843,13 @@ func nTest( t *testing.T ){
     { "Raptor TesT Fest", "#*rapTor (tE#/S#/t)#* fEST", 0 },
     { "Raptor tESt Fest", "#*rapTor (tE#/S#/t)#* fEST", 1 },
 
-    { "",  "a#!",  0 },
-    { "a", "1#!",  1 },
-    { "a", "a#!",  0 },
-    { "A", "a#!",  1 },
-    { "1", "1#!",  0 },
-    { "1", "A#!",  1 },
-    { "a", ":a#!", 0 },
-    { "A", ":A#!", 1 },
-    { "aaa", "z#!", 3 },
-    { "a", "z#!z#!z#!", 0 },
-    { "a aaa aaa", " #!", 7 },
     { "a aaa aaa", "[^ a]", 0 },
-    { "a aaa aaa", ":d#!", 9 },
     { "a aaa aaa", "[^:d:s]", 7 },
     { "a aaa aaa", "[^:d:s][^:d:s][^:d:s]", 2 },
     { "a aaa aaa", "[^:d:s]aa", 2 },
     { "a aaa aaa", "aa[^:d:s]", 2 },
     { "Raptor Test", "[^:d:s]a", 1 },
     { "Raptor Test", "[^A-Z]t", 2 },
-    { "Raptor Test", ":s#!z", 0 },
-    { "Raptor Test", "a #!", 1 },
-    { "Raptor Test", " t#!", 1 },
-    { "Raptor Test", "za#!", 0 },
-    { "a", "z?#!", 1 },
-    { "a", "z+#!", 1 },
-    { "a", "z*#!", 1 },
-    { "a", "z{1}#!", 1 },
-    { "a aaa aaa", " ?#!", 9 },
-    { "a aaa aaa", " +#!", 3 },
-    { "a aaa aaa", " *#!", 5 },
-    { "a aaa aaa", " {1}#!", 7 },
     { "a", "a[^ ]?", 1 },
     { "a", "a[^ ]+", 0 },
     { "a", "a[^ ]*", 1 },
@@ -900,35 +886,6 @@ func nTest( t *testing.T ){
     { "aeiou", "([^ ])?|a", 5 },
     { "aeiou", "([^ ])+|a", 1 },
     { "aeiou", "([^ ])*|a", 1},
-    { "1a2a3a4a5a6a", ":a#!a", 6 },
-    { "1a2b3c4d5e6f", ":a#!:d#!", 6 },
-    { "abababababababababababababababababababab", "(aa#!)" , 20 },
-    { "abababababababababababababababababababab", "(a#!a)" , 19 },
-    { "abababababababababababababababababababab", "(:aa#!)" , 20 },
-    { "abababababababababababababababababababab", "(b#!:a)" , 20 },
-    { "abababababababababababababababababababab", "(x{5}#!:a{5})" , 4 },
-    { "()<>[]{}*?+", ":w#!", 11 },
-    { "a1b", "a(b)#!b" , 1 },
-    { "a1b", "a(:d)#!b" , 0 },
-    { "a1b", "a(:a)#!b" , 1 },
-    { "a1b", "a(:A)#!b" , 0 },
-    { "a1b", "a(a)#!b" , 1 },
-    { "a1b", "a(Raptor)#!b" , 1 },
-    { "a1b", "a(a|b)#!b" , 1 },
-    { "a1b", "a([ab])#!b" , 1 },
-    { "a123456789b", "a(b)#!b" , 0 },
-    { "a123456789b", "a(b)*#!b" , 1 },
-    { "a123456789b", "a(b)+#!b" , 1 },
-    { "a123456789b", "a(b){9}#!b" , 1 },
-    { "a123456789raptor", "a(rApToR)*#*!(rApToR)#*" , 1 },
-    { "a123456789Raptor", "a(Raptor)*#!Raptor" , 1 },
-    { "a1b", "a(:a)#!b" , 1 },
-    { "a1b", "a(:A)#!b" , 0 },
-    { "a1b", "a(a)#!b" , 1 },
-    { "a1b", "a(Raptor)#!b" , 1 },
-    { "a1b", "a(a|b)#!b" , 1 },
-    { "a1b", "a([ab])#!b" , 1 },
-    { "xx123456789yy", "xx(yy)*#!yy", 1 },
 
     { "31/13-1331", "<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>", 0 },
     { "71-17/1177", "<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>", 0 },
@@ -1144,16 +1101,8 @@ func cTest( t *testing.T ){
     { "Rap Captor Fest", "#~<((C|R)ap C|C|R)(a+p{1}tor) ?((<T|F>+e)(st))>", 3, "Captor Fest" },
     { "012345678910109876501234", "<0><1><2><3><4><5><6><7><8><9><10><@11@10@9@8@7@6@1@2@3@4@5>", 12, "109876501234" },
 
-    { "xx123456789yy", "xx<yy>*#!yy", 1, "123456789" },
-    { "1234567::89abc", "#^<::{2}>+#!::{2}", 1, "1234567" },
-    { "1234567::89abc", "#^<::{2}>+#!::{2}<.+>", 2, "89abc" },
-    { "1234567 ::89abc", "#^<:b::{2}>+#!:b::{2}<.+>", 1, "1234567" },
-    { "1234567 ::89abc", "#^<:b::{2}>+#!:b::{2}<.+>", 2, "89abc" },
-    { "- 1234567 ::89abc", "#^:b*-:b+<::{2}>+#!::{2}", 1, "1234567 " },
-    { "- 1234567 ::89abc", "#^:b*-:b+<:b::{2}>+#!:b::{2}", 1, "1234567" },
 
     { "| | text", "#^$<:s*>", 1, "" },
-    { "| | text", "#^$<:b*:|(:|+#!:|)+>", 1, "" },
   }
 
   done := make(chan struct{})
@@ -1486,27 +1435,6 @@ func pTest( t *testing.T ){
     { "07-07-1777", "<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>", "d:#1 m:#3 y:#4", "d:07 m:07 y:1777" },
     { "fecha: 07-07-1777", "<0?[1-9]|[12][0-9]|3[01]><[/:-\\]><0?[1-9]|1[012]>@2<[12][0-9]{3}>", "d:#1 m:#3 y:#4", "d:07 m:07 y:1777" },
 
-    { "a123456789b", "a<b*#!>b" , "#1", "123456789" },
-    { "a123456789b", "a<[:D]*#!>b" , "#1", "123456789" },
-    { "a123456789b", "a<[^:d]*#!>b" , "#1", "123456789" },
-    { "a123456789b", "a<[:a]*#!>b" , "#1", "123456789" },
-    { "a123456789b", "a<[^:A]*#!>b" , "#1", "123456789" },
-    { "a123456789b", "a<:a*#!>b" , "#1", "123456789" },
-    { "a123456789b", "a<:D*#!>b" , "#1", "123456789" },
-    { "a123456789bc", "a(b)+#!<bc>" , "#1", "bc" },
-    { "a123456789b", "a<b>{9}#!b" , "#1", "123456789" },
-    { "a123456789raptor", "a<rApToR>{9}#*!(rApToR)#*", "#1", "123456789"  },
-    { "a123456789Raptor", "a(Raptor)+#!<Raptor>" , "#1", "Raptor"},
-    { "a123456789b", "<a>(b)*#!<b>", "[#1][#2]", "[a][b]" },
-    { "a123456789b", "<a>(b)+#!<b>", "[#1][#2]", "[a][b]" },
-    { "a123456789b", "<a><b>*#!<b>", "[#1][#2][#3]", "[a][123456789][b]" },
-    { "a123456789b", "<a><b>+#!<b>", "[#1][#2][#3]", "[a][123456789][b]" },
-    { "aa0123aa", "<aa>(aa)*#!<aa>", "[#1][#2]", "[aa][aa]" },
-    { "aa0123aa", "<aa><aa>*#!<aa>", "[#1][#2][#3]", "[aa][0123][aa]" },
-    { "aa0123aa", "<aa><aa>+#!<aa>", "[#1][#2][#3]", "[aa][0123][aa]" },
-    { "aa0123aa", "<aa><aa|(B|C)B>*#!<aa|(B|C)B>", "[#1][#2][#3]", "[aa][0123][aa]" },
-    { "aa0123BB", "<aa><aa|(B|C)B>*#!<aa|(B|C)B>", "[#1][#2][#3]", "[aa][0123][BB]" },
-    { "aa0123CB", "<aa><aa|(B|C)B>*#!<aa|(B|C)B>", "[#1][#2][#3]", "[aa][0123][CB]" },
   }
 
   var re RE
@@ -1541,6 +1469,13 @@ func gTest( t *testing.T ){
     { "0123456789", "<9><.?>", 2, 10 },
     { "0123456789", "<9><.>?", 2, 10 },
     { "0123456789", "<9><.>", 2, 0 },
+    { "0123456789", "<9><:.>*<:a>*", 2, 10 },
+    { "0123456789", "<9><:.>*<:a>*", 3, 10 },
+    { "0123456789.", "<9><:.>*<:a>*", 2, 10 },
+    { "0123456789.", "<9><:.>*<:a>*", 3, 11 },
+    { "0123456789.e", "<9><:.>*<:a>*", 3, 11 },
+    { "0123456789...e", "<9><:.>*<:a>*", 3, 13 },
+    { "0123456789^-^!e", "<9><:.>*<:a>*", 3, 10 },
   }
 
   var re RE
@@ -1734,9 +1669,7 @@ func nTestUTF( t *testing.T ){
   done := make(chan struct{})
   for _, c := range numTest {
     go func( txt, re string, n int ){
-      var r RE
-      r.Compile( re )
-      x := r.MatchString( txt )
+      x := new( RE ).Match( txt, re )
 
       if x != n  {
         t.Errorf( "Regexp4( %q, %q ) == %d, expected %d", txt, re, x, n )
@@ -2124,7 +2057,7 @@ func BenchmarkFindCopySimple(b *testing.B) {
   }
 }
 
-// RplCatch (string vs []byte vs bytes.buffer)
+/// RplCatch (string vs []byte vs bytes.Buffer)
 
 func (r *RE) OldRplCatch( rplStr string, id int ) (result string) {
   last := 0
@@ -2136,7 +2069,6 @@ func (r *RE) OldRplCatch( rplStr string, id int ) (result string) {
       result += r.txt[last:r.catches[index].init]
       result += rplStr
       last    = r.catches[index].end
-
     }
   }
 
@@ -2156,7 +2088,6 @@ func (r *RE) BufferRplCatch( rplStr string, id int ) string {
       b.WriteString( r.txt[last:r.catches[index].init] )
       b.WriteString( rplStr )
       last    = r.catches[index].end
-
     }
   }
 

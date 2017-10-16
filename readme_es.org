@@ -9,6 +9,8 @@ lang: [[file:readme.org][en]]
 
 raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
 
+**benchmarks** ==> [aqui](https://nasciiboy.github.io/raptorVSworld/index.html)
+
 * Caracteristicas
 
   - Manejo sencillo,
@@ -28,8 +30,6 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
   - Colocacion de capturas especificas dentro de un arreglo
 
   - Referencia dentro de la exprecion a capturas previas
-
-  - Negacion de expreciones (experimental)
 
   - Objeto concurrentemente seguro
 
@@ -130,7 +130,7 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
     re.Copy() *RE
 
     // compila la regexp
-    re.Compile( re string )
+    re.Compile( re string ) *RE
 
     // busqueda, regresa numero de coincidencias
     re.MatchString( txt string ) int
@@ -434,22 +434,6 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
          re.Match( "RaPtOr TeSt", "#*(RaPtOr)#/ TES#/T" );
        #+END_SRC
 
-     - *negacion de exprecion* "exp#!"
-
-       esta poco convencional exprecion permite el equivalente en otras
-       librerias a expreciones tipo
-
-       #+BEGIN_SRC go
-         xx.*yy
-       #+END_SRC
-
-       es decir "xx" seguida por cualquier cosa que no sea "yy", seguida por "yy".
-       En esta sintaxis seria
-
-       #+BEGIN_SRC go
-         re.Match( "xx123456789yy", "xx(yy)*#!yy" );
-       #+END_SRC
-
 ** Capturas
 
    Las capturas se indexan segun el orden de aparicion dentro de la expresion
@@ -628,13 +612,6 @@ raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
    #+END_SRC
 
    capturar por secciones (usuario,sitio,dominio) algo parecido a un correo.
-
-   #+BEGIN_SRC go
-      re.Match( "xx0123yy", "<xx><yy>*#!<yy>" );
-   #+END_SRC
-
-   capturar una cadena que contenga "xx", luego captura cualquier cosa que no
-   sea "yy" y finalmente captura nuevamente "yy"
 
 * Hacking
 ** algoritmo

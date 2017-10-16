@@ -9,6 +9,8 @@ lang: [[file:readme_es.org][es]]
 
 raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][here]]
 
+**benchmarks** ==> [here](https://nasciiboy.github.io/raptorVSworld/index.html)
+
 * Characteristics
 
   - Easy to use.
@@ -28,8 +30,6 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
   - Replacement catch
 
   - Placement of specific catches within an array
-
-  - Denial of expressions (experimental)
 
   - Backreferences
 
@@ -124,7 +124,7 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
     re.Copy() *RE
 
     // compile regexp
-    re.Compile( re string )
+    re.Compile( re string ) *RE
 
     // search, return number of matches
     re.MatchString( txt string ) int
@@ -427,22 +427,6 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
          re.Match( "RaPtOr TeSt", "#*(RaPtOr)#/ TES#/T" )
        #+END_SRC
 
-     - *Denial of exprecion* "exp#!"
-
-       this unconventional exprecion allows the equivalent in other libraries to
-       expreciones type
-
-       #+BEGIN_SRC go
-         xx.*yy
-       #+END_SRC
-
-       ie "xx" followed by anything other than "yy", followed by "yy".
-       In this syntax serious
-
-       #+BEGIN_SRC go
-         re.Match( "xx123456789yy", "xx(yy)*#!yy" )
-       #+END_SRC
-
 ** Captures
 
    Catches are indexed according to the order of appearance in the expression
@@ -619,13 +603,6 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
 
    capture sections (user, site, domain) something like an email.
 
-   #+BEGIN_SRC go
-      re.Match( "xx0123yy", "<xx><yy>*#!<yy>" )
-   #+END_SRC
-
-   capturing a string containing "xx", then captures anything not
-   is "yy" and finally catch again "yy"
-
 * Hacking
 ** algorithm
 *** Flow Diagram
@@ -741,12 +718,6 @@ raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][her
                                                     │                                │
                                                     └────────────────────────────────┘
     #+END_EXAMPLE
-
-* Todo
-
-  1. Tests of performance
-
-  2. Parallelize the search of routes
 
 * License
 

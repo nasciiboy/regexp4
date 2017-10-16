@@ -39,9 +39,8 @@ type RE struct {
   compile      bool
   result       int
 
-  txtInit      int
-  txtLen       int
-  txtPos       int
+  end          int
+  pos          int
 
   catches      []catchInfo
   catchIndex   int
@@ -51,10 +50,10 @@ type RE struct {
   mods         uint8
 }
 
-func (r *RE) Compile( re string ){
+func (r *RE) Compile( re string ) *RE {
   r.catchIndex = 1
   r.compile    = false
-  if len(re) == 0 { return }
+  if len(re) == 0 { return r }
 
   rexp := reStruct{ str: re, reType: asmPath }
   r.re  = re
@@ -63,12 +62,12 @@ func (r *RE) Compile( re string ){
   getMods( &rexp, &rexp )
   r.mods = rexp.mods
 
-  r.genPaths( rexp )
-  // if isPath( &rexp ) { r.genPaths( rexp )
-  // } else { r.genTracks( &rexp ) }
+  if isPath( &rexp ) { r.genPaths( rexp )
+  } else { r.genTracks( &rexp ) }
 
   r.asm = append( r.asm, raptorASM{ inst: asmEnd, close: len(r.asm) } )
   r.compile = true
+  return r
 }
 
 func isPath( rexp *reStruct ) bool {
@@ -110,18 +109,16 @@ func (r *RE) genTracks( rexp *reStruct ){
     case asmHook   :
       r.asm = append( r.asm, raptorASM{ inst: asmHook, re: track } )
 
-      r.genPaths ( track )
-      // if isPath( &track ) { r.genPaths ( track )
-      // } else              { r.genTracks( &track ) }
+      if isPath( &track ) { r.genPaths ( track )
+      } else              { r.genTracks( &track ) }
 
       r.asm[trackIndex].close = len( r.asm )
       r.asm = append( r.asm, raptorASM{ inst: asmHookEnd, close: len(r.asm) } )
     case asmGroup  :
       r.asm = append( r.asm, raptorASM{ inst: asmGroup, re: track } )
 
-      r.genPaths ( track )
-      // if isPath( &track ) { r.genPaths ( track )
-      // } else              { r.genTracks( &track ) }
+      if isPath( &track ) { r.genPaths ( track )
+      } else              { r.genTracks( &track ) }
 
       r.asm[trackIndex].close = len( r.asm )
       r.asm = append( r.asm, raptorASM{ inst: asmGroupEnd, close: len(r.asm) } )
@@ -141,9 +138,8 @@ func (r *RE) genSet( rexp *reStruct ){
   if len(rexp.str) == 0 { return }
 
   if rexp.str[0] == '^' {
-    rexp.str = rexp.str[1:]
-    if rexp.mods & modNegative > 0 { rexp.mods &= modPositive
-    } else                         { rexp.mods |= modNegative }
+    rexp.str   = rexp.str[1:]
+    rexp.mods |= modNegative
   }
 
   setIndex := len( r.asm )
@@ -258,8 +254,8 @@ func cutByType( rexp, track *reStruct, reType uint8 ) bool {
 
     switch reType {
     case asmHook, asmGroup: cut = deep == 0
-    case asmSet          : cut = rexp.str[ i ] == ']'
-    case asmPath         : cut = rexp.str[ i ] == '|' && deep == 0
+    case asmSet           : cut = rexp.str[ i ] == ']'
+    case asmPath          : cut = rexp.str[ i ] == '|' && deep == 0
     }
 
     if cut {
@@ -292,8 +288,6 @@ func walkMeta( str string, n *int ) int {
 }
 
 func getMods( rexp, track *reStruct ){
-  track.mods &= modPositive
-
   if len( rexp.str ) > 0 && rexp.str[ 0 ] == '#' {
     for i, c := range rexp.str[1:] {
       switch c {
@@ -303,7 +297,6 @@ func getMods( rexp, track *reStruct ){
       case '~': track.mods |= modFwrByChar
       case '*': track.mods |= modCommunism
       case '/': track.mods &= modCapitalism
-      case '!': track.mods |= modNegative
       default : rexp.str    = rexp.str[i+1:]; return
       }
     }
@@ -358,27 +351,27 @@ func (r *RE) FindString( txt string ) bool {
 }
 
 func (r *RE) MatchString( txt string ) int {
-  loops       := len(txt)
+  r.end        = len(txt)
   r.txt        = txt
   r.result     = 0
   r.catches    = make( []catchInfo, 32 )
   r.catchIndex = 1
-  if len(txt) == 0  || !r.compile { return 0 }
+  if r.end == 0  || !r.compile { return 0 }
 
+  loops := r.end
   if (r.mods & modAlpha) > 0 { loops = 1 }
 
   for forward, i, ocindex := 0, 0, 0; i < loops; i += forward {
-    forward, r.catchIdIndex       = utf8meter( txt[i:] ), 1
-    r.txtPos, r.txtInit, r.txtLen = 0, i, len( txt[i:] )
-    ocindex                       = r.catchIndex
+    forward, r.catchIdIndex, r.pos = utf8meter( txt[i:] ), 1, i
+    ocindex = r.catchIndex
 
     if r.trekking( 0 ) {
       if (r.mods & modOmega) > 0 {
-        if r.txtPos == r.txtLen                              { r.result = 1; return 1
+        if r.pos == r.end                                 { r.result = 1; return 1
         } else { r.catchIndex = 1 }
-      } else if (r.mods & modLonley   ) > 0                  { r.result = 1; return 1
-      } else if (r.mods & modFwrByChar) > 0 || r.txtPos == 0 { r.result++
-      } else {   forward = r.txtPos;                           r.result++; }
+      } else if (r.mods & modLonley   ) > 0               { r.result = 1; return 1
+      } else if (r.mods & modFwrByChar) > 0 || r.pos == i { r.result++
+      } else {   forward = r.pos - i;                       r.result++; }
     } else { r.catchIndex = ocindex }
   }
 
@@ -406,9 +399,9 @@ func (r *RE) trekking( index int ) (result bool) {
 
 func (r *RE) walker( index int ) bool {
   index++
-  for oTextPos, oCatchIndex, oCatchIdIndex := r.txtPos, r.catchIndex, r.catchIdIndex;
+  for oPos, oCatchIndex, oCatchIdIndex := r.pos, r.catchIndex, r.catchIdIndex;
       r.asm[ index ].inst == asmPathEle
-      index, r.txtPos, r.catchIndex, r.catchIdIndex = r.asm[ index ].close, oTextPos, oCatchIndex, oCatchIdIndex {
+      index, r.pos, r.catchIndex, r.catchIdIndex = r.asm[ index ].close, oPos, oCatchIndex, oCatchIdIndex {
     if r.trekking( index + 1 ) { return true }
   }
 
@@ -418,16 +411,9 @@ func (r *RE) walker( index int ) bool {
 func (r *RE) looper( index int ) bool {
   loops := 0
 
-  if (r.asm[ index ].re.mods & modNegative) > 0 {
-    for forward := 0; loops < r.asm[ index ].re.loopsMax && r.txtPos < r.txtLen && !r.match( index, r.txt[r.txtInit + r.txtPos:], &forward ); {
-      r.txtPos += utf8meter( r.txt[r.txtInit + r.txtPos:] )
-      loops++;
-    }
-  } else {
-    for forward := 0; loops < r.asm[ index ].re.loopsMax && r.txtPos < r.txtLen &&  r.match( index, r.txt[r.txtInit + r.txtPos:], &forward ); {
-      r.txtPos += forward
-      loops++;
-    }
+  for forward := 0; loops < r.asm[ index ].re.loopsMax && r.pos < r.end &&  r.match( index, r.txt[r.pos:], &forward ); {
+    r.pos += forward
+    loops++;
   }
 
   if loops < r.asm[ index ].re.loopsMin { return false }
@@ -435,23 +421,13 @@ func (r *RE) looper( index int ) bool {
 }
 
 func (r *RE) loopGroup( index int ) bool {
-  loops, textxtPos := 0, r.txtPos;
+  loops := 0
 
-  if (r.asm[ index ].re.mods & modNegative) > 0 {
-    for loops < r.asm[ index ].re.loopsMax && !r.trekking( index + 1 ) {
-      textxtPos++;
-      r.txtPos = textxtPos;
-      loops++;
-    }
-
-    r.txtPos = textxtPos;
-  } else {
-    for loops < r.asm[ index ].re.loopsMax && r.trekking( index + 1 ) {
-      loops++;
-    }
+  for loops < r.asm[ index ].re.loopsMax && r.trekking( index + 1 ) {
+    loops++;
   }
 
-  if loops < r.asm[ index ].re.loopsMin { return false  }
+  if loops < r.asm[ index ].re.loopsMin { return false }
   return true
 }
 
@@ -516,6 +492,7 @@ func matchMeta( rexp *reStruct, txt string, forward *int ) bool {
 
 func (r *RE) matchSet( index int, txt string, forward *int ) (result bool) {
   *forward = 1
+  reverse := (r.asm[ index ].re.mods & modNegative) > 0
 
   for index++; !result && r.asm[ index ].inst != asmSetEnd; index++ {
     switch r.asm[ index ].inst {
@@ -529,7 +506,15 @@ func (r *RE) matchSet( index int, txt string, forward *int ) (result bool) {
       }
     }
 
-    if result { return true }
+    if result {
+      if reverse { return false }
+      return true
+    }
+  }
+
+  if reverse {
+    *forward = utf8meter( txt )
+    return true
   }
 
   return false
@@ -558,9 +543,9 @@ func (r *RE) openCatch() (index int) {
   index = r.catchIndex
 
   if r.catchIndex < len(r.catches) {
-    r.catches[index] = catchInfo{ r.txtInit + r.txtPos, r.txtInit + r.txtPos, r.catchIdIndex }
+    r.catches[index] = catchInfo{ r.pos, r.pos, r.catchIdIndex }
   } else {
-    r.catches = append( r.catches, catchInfo{ r.txtInit + r.txtPos, r.txtInit + r.txtPos, r.catchIdIndex } )
+    r.catches = append( r.catches, catchInfo{ r.pos, r.pos, r.catchIdIndex } )
   }
 
   r.catchIndex++
@@ -570,7 +555,7 @@ func (r *RE) openCatch() (index int) {
 
 func (r *RE) closeCatch( index int ){
   if index < r.catchIndex {
-    r.catches[index].end = r.txtInit + r.txtPos
+    r.catches[index].end = r.pos
   }
 }
 
@@ -650,7 +635,5 @@ func (r *RE) Copy() *RE {
 }
 
 func Compile( re string ) *RE {
-  nre :=  new( RE )
-  nre.Compile( re )
-  return nre
+  return new( RE ).Compile( re )
 }
