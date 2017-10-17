@@ -9,7 +9,7 @@ lang: [[file:readme.org][en]]
 
 raptor-book (borrador) : [[https://github.com/nasciiboy/raptor-book/][aqui]]
 
-**benchmarks** ==> [aqui](https://nasciiboy.github.io/raptorVSworld/index.html)
+*benchmarks* ==> [[https://nasciiboy.github.io/raptorVSworld/index.html][aqui]]
 
 * Caracteristicas
 

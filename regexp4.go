@@ -410,7 +410,6 @@ func (r *RE) walker( index int ) bool {
 
 func (r *RE) looper( index int ) bool {
   loops := 0
-
   for forward := 0; loops < r.asm[ index ].re.loopsMax && r.pos < r.end &&  r.match( index, r.txt[r.pos:], &forward ); {
     r.pos += forward
     loops++;
@@ -422,7 +421,6 @@ func (r *RE) looper( index int ) bool {
 
 func (r *RE) loopGroup( index int ) bool {
   loops := 0
-
   for loops < r.asm[ index ].re.loopsMax && r.trekking( index + 1 ) {
     loops++;
   }

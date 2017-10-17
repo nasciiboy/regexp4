@@ -9,7 +9,7 @@ lang: [[file:readme_es.org][es]]
 
 raptor-book (draft (spanish)) : [[https://github.com/nasciiboy/raptor-book/][here]]
 
-**benchmarks** ==> [here](https://nasciiboy.github.io/raptorVSworld/index.html)
+*benchmarks* ==> [[https://nasciiboy.github.io/raptorVSworld/index.html][here]]
 
 * Characteristics
 
