@@ -342,8 +342,7 @@ func (r *RE) Find( txt, re string ) bool {
 }
 
 func (r *RE) Match( txt, re string ) int {
-  r.Compile( re )
-  return r.MatchString( txt )
+  return r.Compile( re ).MatchString( txt )
 }
 
 func (r *RE) FindString( txt string ) bool {
