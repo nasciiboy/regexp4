@@ -3,7 +3,7 @@
 #+LANGUAGE: en
 #+STARTUP:  showall
 
-[[https://cover.run/go/github.com/nasciiboy/regexp4.svg]]
+[[https://cover.run/go/github.com/nasciiboy/regexp4.svg][cover.run]]
 
 regexp3 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor][C-lang]], [[https://github.com/nasciiboy/regexp3][Go-lang]]) and regexp4 ([[https://github.com/nasciiboy/RecursiveRegexpRaptor-4][C-lang]], [[https://github.com/nasciiboy/regexp4][Go-lang]])
 
