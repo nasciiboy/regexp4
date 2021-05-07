@@ -62,8 +62,8 @@ func (r *RE) Compile( re string ) *RE {
   getMods( &rexp, &rexp )
   r.mods = rexp.mods
 
-  if isPath( &rexp ) { r.genPaths( rexp )
-  } else { r.genTracks( &rexp ) }
+  if isPath( &rexp ) { r.genPaths (  rexp  )
+  } else             { r.genTracks( &rexp  ) }
 
   r.asm = append( r.asm, raptorASM{ inst: asmEnd, close: len(r.asm) } )
   r.compile = true
@@ -381,10 +381,7 @@ func (r *RE) trekking( index int ) (result bool) {
   for ; r.asm[ index ].inst != asmEnd; index = r.asm[ index ].close + 1 {
     switch r.asm[ index ].inst {
     case asmPathEnd, asmPathEle, asmGroupEnd, asmHookEnd, asmSetEnd: return true
-    case asmHook :
-      iCatch := r.openCatch();
-      result  = r.loopGroup( index )
-      if result { r.closeCatch( iCatch ) }
+    case asmHook : result = r.catcher  ( index )
     case asmGroup: result = r.loopGroup( index )
     case asmPath : result = r.walker   ( index )
     default      : result = r.looper   ( index )
@@ -393,6 +390,23 @@ func (r *RE) trekking( index int ) (result bool) {
     if !result { return false }
   }
 
+  return true
+}
+
+func (r *RE) catcher( index int ) bool {
+  i := r.catchIndex
+  if r.catchIndex < len(r.catches) {
+    r.catches[ i ] = catchInfo{ r.pos, r.pos, r.catchIdIndex }
+  } else {
+    r.catches = append( r.catches, catchInfo{ r.pos, r.pos, r.catchIdIndex } )
+  }
+
+  r.catchIndex++
+  r.catchIdIndex++
+
+  if !r.loopGroup( index ) { return false }
+
+  r.catches[ i ].end = r.pos
   return true
 }
 
@@ -534,26 +548,6 @@ func (r *RE) lastIdCatch( id int ) int {
   }
 
   return len(r.catches);
-}
-
-func (r *RE) openCatch() (index int) {
-  index = r.catchIndex
-
-  if r.catchIndex < len(r.catches) {
-    r.catches[index] = catchInfo{ r.pos, r.pos, r.catchIdIndex }
-  } else {
-    r.catches = append( r.catches, catchInfo{ r.pos, r.pos, r.catchIdIndex } )
-  }
-
-  r.catchIndex++
-  r.catchIdIndex++
-  return
-}
-
-func (r *RE) closeCatch( index int ){
-  if index < r.catchIndex {
-    r.catches[index].end = r.pos
-  }
 }
 
 func (r *RE) Result  () int { return r.result }
